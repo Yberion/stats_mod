@@ -2523,6 +2523,17 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 
 	self->client->ps.persistant[PERS_KILLED]++;
 
+	if (!g_disableendstats.integer)
+	{
+		if (OnSameTeam(self, attacker) && self != attacker)
+		{
+			attacker->client->ps.persistant[PERS_TEAMKILL]++;
+			
+			if (!g_disablemodsounds.integer)
+				G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/teamkiller"));
+		}
+	}
+
 	if (self == attacker)
 	{
 		self->client->ps.fd.suicides++;
@@ -2600,6 +2611,61 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 				AddScore( attacker, self->r.currentOrigin, 1 );
 			}
 
+			if (!g_disableendstats.integer)
+			{
+				attacker->client->pers.actualKillsInARow++;
+
+				if (((level.teamScores[TEAM_RED] == 0 && level.teamScores[TEAM_BLUE] == 1) || (level.teamScores[TEAM_BLUE] == 0 && level.teamScores[TEAM_RED] == 1)) && !level.firstBlood)
+				{
+					if (!g_disablemodsounds.integer)
+						G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/firstblood"));
+					level.firstBlood = qtrue;
+				}
+
+				if (!g_disablemodsounds.integer)
+				{
+					if (attacker->client->pers.actualKillsInARow < 10)
+					{
+						switch (attacker->client->pers.actualKillsInARow)
+						{
+						case 3:
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/dominating"));
+							break;
+						case 4:
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/multikill.wav"));
+							break;
+						case 5:
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/ultrakill"));
+							break;
+						case 6:
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/monsterkill"));
+							break;
+						case 7:
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/rampage"));
+							break;
+						case 8:
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/unstoppable"));
+							break;
+						case 9:
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/godlike"));
+							break;
+						case 10:
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/holyshit"));
+							break;
+						case 11:
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/whickedsick"));
+							break;
+						default:
+							break;
+						}
+					}
+					else
+					{
+						G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/whickedsick"));
+					}
+				}
+			}
+
 			if( meansOfDeath == MOD_STUN_BATON ) {
 
 				// play humiliation on player
@@ -2613,12 +2679,26 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 
 			// check for two kills in a short amount of time
 			// if this is close enough to the last kill, give a reward sound
-			if ( level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
+			if ( (level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME) && !attacker->client->doubleKill) {
 				// play excellent on player
 				attacker->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
 
 				attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
+
+				if (!g_disableendstats.integer)
+				{
+					if (!g_disablemodsounds.integer)
+						G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/doublekill"));
+					attacker->client->doubleKill = qtrue;
+				}
 			}
+			else if ((level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME) && attacker->client->doubleKill && !g_disableendstats.integer)
+			{
+				if (!g_disablemodsounds.integer)
+					G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/triplekill"));
+				attacker->client->doubleKill = qfalse;
+			}
+			
 			attacker->client->lastKillTime = level.time;
 
 		}
@@ -5372,6 +5452,72 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		}
 	}
 
+	if (mod != MOD_TEAM_CHANGE && !g_disableendstats.integer)
+	{
+		if (!(targ->s.eFlags & EF_DEAD))
+		{
+			//If both attacker and target are actually clients
+			if (attacker->client && targ->client)
+			{
+				//Both attacker and target are in the same team
+				if (OnSameTeam(targ, attacker) && attacker->client != targ->client)
+				{
+					if (take > targ->health)
+					{
+						attacker->client->pers.damageTeam += (targ->health + asave);
+					}
+					else
+					{
+						attacker->client->pers.damageTeam += (take + asave);
+					}
+				}
+				else if (OnSameTeam(targ, attacker) && attacker->client == targ->client)
+				{
+					if (take > targ->health)
+					{
+						attacker->client->pers.damageTaken += (targ->health + asave);
+					}
+					else
+					{
+						attacker->client->pers.damageTaken += (take + asave);
+					}
+				}
+				else if (!OnSameTeam(targ, attacker))
+				{
+					if (take > targ->health && mod == MOD_MELEE)
+					{
+						targ->client->pers.damageTaken += (targ->health + asave);
+						attacker->client->pers.damageDealt += (targ->health + asave);
+
+						if(!g_disablemodsounds.integer)
+							G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/humilation"));
+					}
+					else if (take > targ->health)
+					{
+						targ->client->pers.damageTaken += (targ->health + asave);
+						attacker->client->pers.damageDealt += (targ->health + asave);
+					}
+					else
+					{
+						targ->client->pers.damageTaken += (take + asave);
+						attacker->client->pers.damageDealt += (take + asave);
+					}
+				}
+			}
+			else
+			{
+				if (take > targ->health)
+				{
+					targ->client->pers.damageTaken += (targ->health + asave);
+				}
+				else
+				{
+					targ->client->pers.damageTaken += (take + asave);
+				}
+			}
+		}
+	}
+
 	// do the damage
 	if (take)
 	{
@@ -5557,7 +5703,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 		G_LogWeaponDamage(attacker->s.number, mod, take);
 	}
-
 }
 
 

@@ -1753,3 +1753,54 @@ void Q_AddToBitflags( uint32_t *bits, int index, uint32_t bitsPerByte ) {
 void Q_RemoveFromBitflags( uint32_t *bits, int index, uint32_t bitsPerByte ) {
 	bits[index / bitsPerByte] &= ~(1 << (index % bitsPerByte));
 }
+
+/*
+==================
+calcRatio
+==================
+*/
+
+float calcRatio(int kill, int death, int suicide, int teamKill, char *ratioString, int sizeRatioString) {
+
+	if ((kill - death) >= 0)
+		Com_sprintf(ratioString, sizeRatioString, "(" S_COLOR_GREEN "+%i" S_COLOR_WHITE ")", kill - death);
+	else
+		Com_sprintf(ratioString, sizeRatioString, "(" S_COLOR_RED "%i" S_COLOR_WHITE ")", kill - (death - suicide));
+
+	if (kill == 0 && death == 0)
+		return 1.00;
+	else if (kill < 1 && death >= 1)
+		return 0.00;
+	else if (teamKill >= 1 && kill < teamKill && kill < 0)
+		return 0.00;
+	else if (kill >= 1 && death <= 1)
+		return (float)kill;
+	else
+		return (float)kill / (float)death;
+}
+
+
+/*
+==================
+calcDmgRatio
+==================
+*/
+
+float calcDmgRatio(int damageDealt, int damageTaken, int damageTeam, char *dmgRatioString, int sizeDmgRatioString) {
+
+	if ((damageDealt - damageTaken) >= 0 && damageTeam <= (damageDealt - damageTaken))
+		Com_sprintf(dmgRatioString, sizeDmgRatioString, "(" S_COLOR_GREEN "+%i" S_COLOR_WHITE ")", damageDealt - damageTaken - damageTeam);
+	else
+		Com_sprintf(dmgRatioString, sizeDmgRatioString, "(" S_COLOR_RED "%i" S_COLOR_WHITE ")", damageDealt - damageTaken - damageTeam);
+
+	if ((damageDealt + damageTaken + damageTeam) == 0)
+		return 1.00;
+	else if (damageDealt < 1 && (damageTaken + damageTeam) >= 1)
+		return 0.00;
+	else if (damageTeam >= 1 && damageDealt < damageTeam)
+		return 0.00;
+	else if (damageDealt >= 1 && (damageTaken + damageTeam) <= 1 )
+		return (float)damageDealt;
+	else
+		return (float)damageDealt / ((float)damageTaken + (float)damageTeam);
+}

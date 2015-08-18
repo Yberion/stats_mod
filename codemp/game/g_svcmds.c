@@ -446,6 +446,145 @@ void	Svcmd_ForceTeam_f( void ) {
 }
 
 char *ConcatArgs( int start );
+
+
+/*
+===================
+Svcmd_Help_f
+
+Print the help
+===================
+*/
+
+void Svcmd_Help_f(void)
+{
+	char        buffer[256] = { 0 };
+	char        cmd[MAX_TOKEN_CHARS] = { 0 };
+	int                currentProgress = 0;
+	static char help[] = "\n"\
+		"Common admin commands:\n"\
+		"------------------------------------------------\n\n"\
+		"help           <cmd> (Example: help addbot)\n\n"\
+		"addbot         <botname> [skill 1-5] [team] [msec delay] [altname]\n"\
+		"addip          <IP>\n"\
+		"botlist        <none>\n"\
+		"clientkick     <client ID>\n"\
+		"cmdlist        <none>\n"\
+		"cvarlist       <none>\n"\
+		"devmap         <mapname>\n"\
+		"dumpuser       <client ID>\n"\
+		"exec           <config>\n"\
+		"forceteam      <client ID> <team>\n"\
+		"kick           <Player name>\n"\
+		"kickall        <none>\n"\
+		"kickbots       <none>\n"\
+		"listip         <none>\n"\
+		"map            <mapname>\n"\
+		"map_restart    <second>\n"\
+		"quit           <none>\n"\
+		"removeip       <IP>\n"\
+		"status         <none>\n"\
+		"svsay          <message>\n"\
+		"svtell         <client ID>\n";
+
+	if (trap->Argc() > 2) {
+		trap->Print("Usage: help <cmd>\n");
+		return;
+	}
+	else if (trap->Argc() == 2)
+	{
+		trap->Argv(1, cmd, sizeof(cmd));
+		trap->Print("\n");
+
+		if (Q_stricmp(cmd, "addbot") == 0) {
+			//FIXME: probably not alora on compJA
+			trap->Print("addbot: Example: alora 3 red 0 CustomName\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "botlist") == 0) {
+			trap->Print("botlist: List all available bot\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "cvarlist") == 0) {
+			trap->Print("cvarlist: Lists all commands\n"\
+				"Be careful with ones you dont really know\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "cmdlist") == 0) {
+			trap->Print("cmdlist: Lists all console variables\n"\
+				"Be careful with modifying these if they are not familiar\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "devmap") == 0) {
+			trap->Print("devmap: Same as map but turns cheats on\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "dumpuser") == 0) {
+			trap->Print("dumpuser: Print userinfo cvars of a client\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "forceteam") == 0) {
+			trap->Print("forceteam: Example: forceteam 1 spectator\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "kickall") == 0) {
+			trap->Print("kickall: Will kick everyone\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "kickbots") == 0) {
+			trap->Print("kickbots: Will kick every bot\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "listip") == 0) {
+			trap->Print("listip: Display banned ip\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "map_restart") == 0) {
+			trap->Print("map_restart: Default to 5\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "quit") == 0) {
+			trap->Print("quit: Entirely shutdown the server\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "status") == 0) {
+			trap->Print("status: Display client and server information\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "svsay") == 0) {
+			trap->Print("svsay: Example: svsay hello\n");
+			return;
+		}
+
+		if (Q_stricmp(cmd, "svtell") == 0) {
+			trap->Print("svtell: Print a private chat message to a client\n"\
+				"Example: svtell 1 hello\n");
+			return;
+		}
+	}
+
+	while (currentProgress < sizeof(help) - 1)
+	{
+		Q_strncpyz(buffer, &help[currentProgress], sizeof(buffer));
+		trap->Print(buffer);
+		currentProgress += strlen(buffer);
+	}
+}
+
+
 void Svcmd_Say_f( void ) {
 	char *p = NULL;
 	// don't let text be too long for malicious reasons
@@ -491,6 +630,7 @@ svcmd_t svcmds[] = {
 	{ "entitylist",					Svcmd_EntityList_f,					qfalse },
 	{ "forceteam",					Svcmd_ForceTeam_f,					qfalse },
 	{ "game_memory",				Svcmd_GameMem_f,					qfalse },
+	{ "help",						Svcmd_Help_f,						qfalse },
 	{ "listip",						Svcmd_ListIP_f,						qfalse },
 	{ "removeip",					Svcmd_RemoveIP_f,					qfalse },
 	{ "say",						Svcmd_Say_f,						qtrue },

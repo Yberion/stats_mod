@@ -1513,7 +1513,7 @@ typedef struct forcedata_s {
 	int			saberAnimLevel;
 	int			saberDrawAnimLevel;
 
-	int			suicides;
+	int			suicides;	// count of the number of times you suicided
 
 	int			privateDuelTime;
 } forcedata_t;
@@ -2402,3 +2402,11 @@ void NET_AddrToString( char *out, size_t size, void *addr );
 qboolean Q_InBitflags( const uint32_t *bits, int index, uint32_t bitsPerByte );
 void Q_AddToBitflags( uint32_t *bits, int index, uint32_t bitsPerByte );
 void Q_RemoveFromBitflags( uint32_t *bits, int index, uint32_t bitsPerByte );
+
+// calcRatio
+//============================================
+float calcRatio(int kill, int death, int suicide, int teamKill, char *ratioString, int sizeRatioString);
+
+// calcDmgRatio
+//============================================
+float calcDmgRatio(int damageDealt, int damageTaken, int damageTeam, char *dmgRatioString, int sizeDmgRatioString);

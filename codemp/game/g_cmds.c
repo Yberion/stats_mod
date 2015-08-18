@@ -24,6 +24,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 #include "g_local.h"
 #include "bg_saga.h"
+#include "qcommon/game_version.h"
 
 #include "ui/menudef.h"			// for the voice chats
 
@@ -118,6 +119,408 @@ Request current scoreboard information
 void Cmd_Score_f( gentity_t *ent ) {
 	DeathmatchScoreboardMessage( ent );
 }
+
+/*
+==================
+Cmd_Stats_f
+
+Request current personal stats
+==================
+*/
+void Cmd_Stats_f(gentity_t *ent) {
+
+	if (g_disablecmdstats.integer)
+		return;
+
+	playerState_t *ps = &ent->client->ps;
+	char    ratioString[16] = { 0 };
+	float   ratio = calcRatio(ps->persistant[PERS_SCORE], ps->persistant[PERS_KILLED], ps->fd.suicides, ps->persistant[PERS_TEAMKILL], ratioString, sizeof(ratioString));
+	
+	if (level.gametype == GT_CTF)
+	{
+		trap->SendServerCommand(ent - g_entities, "print \"Ratio isn't supported by this gametype\n\"");
+		return;
+	}
+
+	trap->SendServerCommand(ent - g_entities, va("print \"Kills"S_COLOR_BLUE": "S_COLOR_WHITE"%i "S_COLOR_BLUE"| "
+		""S_COLOR_WHITE"Deaths"S_COLOR_BLUE": "S_COLOR_WHITE"%i "S_COLOR_BLUE"("S_COLOR_WHITE"Suicides"S_COLOR_BLUE": "S_COLOR_WHITE"%i"S_COLOR_BLUE") "S_COLOR_BLUE"| "
+		""S_COLOR_WHITE"Teamkills"S_COLOR_BLUE": "S_COLOR_WHITE"%i "S_COLOR_BLUE"| "S_COLOR_WHITE"Ratio"S_COLOR_BLUE": "S_COLOR_WHITE"%.2f %s\n\"",
+		ps->persistant[PERS_SCORE], ps->persistant[PERS_KILLED],
+		ps->fd.suicides, ps->persistant[PERS_TEAMKILL],
+		ratio, ratioString));
+}
+
+/*
+==================
+Cmd_PlayerList_f
+==================
+*/
+void Cmd_PlayerList_f(gentity_t *ent) {
+
+	if (g_disablecmdplayerlist.integer)
+		return;
+
+	gclient_t	*cl;
+	int	i;
+	char state[32] = { 0 }, pInfo[32] = { 0 };
+
+	trap->SendServerCommand(ent - g_entities, "print \"\n\"");
+	trap->SendServerCommand(ent - g_entities, "print \"ID Ping Name             Info\n\"");
+	trap->SendServerCommand(ent - g_entities, "print \"-- ----- --------------- -------\n\"");
+
+	for (i = 0, cl = level.clients; i < level.numConnectedClients; i++, cl++)
+	{
+		if (cl->pers.connected == CON_DISCONNECTED)
+			continue;
+
+		if (cl->pers.connected == CON_CONNECTING)
+			strcpy(state, "CNCT ");
+		else
+			strcpy(state, va("%4i ", cl->ps.ping < 999 ? cl->ps.ping : 999));
+
+		if (cl->sess.sessionTeam == TEAM_RED || cl->sess.sessionTeam == TEAM_BLUE)
+			strcpy(pInfo, "In Game");
+		else
+			memset(pInfo, 0, sizeof(pInfo));
+
+		trap->SendServerCommand(ent - g_entities, va("print \"%2i %4s %-15.15s "S_COLOR_GREEN"%7s\n\"", i, state, cl->pers.netname_nocolor, pInfo));
+	}
+}
+
+
+/*
+==================
+GetStatusString
+
+Build the status
+==================
+*/
+char *GetStatusString(void) {
+
+	static char status[4096] = { 0 };
+	static int lastTime = 0;
+	gclient_t                        *cl;
+	qboolean				someoneHasRedFlag = qfalse, someoneHasBlueFlag = qfalse;
+	char	buf[128] = { 0 },
+			whoHasRedFlag[MAX_NETNAME] = { 0 },
+			whoHasBlueFlag[MAX_NETNAME] = { 0 },
+			player1Duel[MAX_NETNAME] = { 0 },
+			player2Duel[MAX_NETNAME] = { 0 };
+	int		i,
+			humans = 0,
+			bots = 0,
+			freePing = 0,
+			redPing = 0,
+			bluePing = 0,
+			redCount = 0,
+			blueCount = 0,
+			freeCount = 0;
+
+#if defined(_WIN32)
+#define STATUS_OS "Windows"
+#elif defined(__linux__)
+#define STATUS_OS "Linux"
+#elif defined(MACOS_X)
+#define STATUS_OS "OSX"
+#else
+#define STATUS_OS "Unknown"
+#endif
+
+	const char *ded_table[] =
+	{
+		"Listen",
+		"Lan Dedicated",
+		"Public Dedicated",
+	};
+
+	if (level.time > lastTime + 5000) // this will be the time check later.
+	{
+		// We're going to rewrite status, clear it.
+		memset(status, 0, sizeof(status));
+
+		lastTime = level.time;
+
+		for (i = 0, cl = level.clients; i < level.numConnectedClients; i++, cl++)
+		{
+			if (cl->pers.connected == CON_CONNECTED)
+			{
+				if (g_entities[i].r.svFlags & SVF_BOT)
+					bots++;
+				else
+				{
+					humans++;
+
+					if (cl->sess.sessionTeam == TEAM_RED)
+					{
+						redPing += cl->ps.ping;
+						redCount++;
+						if (cl->ps.powerups[PW_BLUEFLAG])
+						{
+							Q_strncpyz(whoHasBlueFlag, cl->pers.netname_nocolor, sizeof(whoHasBlueFlag));
+							someoneHasBlueFlag = qtrue;
+						}
+					}
+					else if (cl->sess.sessionTeam == TEAM_BLUE)
+					{
+						bluePing += cl->ps.ping;
+						blueCount++;
+						if (cl->ps.powerups[PW_REDFLAG])
+						{
+							Q_strncpyz(whoHasRedFlag, cl->pers.netname_nocolor, sizeof(whoHasRedFlag));
+							someoneHasRedFlag = qtrue;
+						}
+					}
+					else if (cl->sess.sessionTeam == TEAM_FREE)
+					{
+						freePing += cl->ps.ping;
+						freeCount++;
+					}
+				}
+			}
+		}
+
+
+		Q_strcat(status, sizeof(status), "\n");
+		Q_strcat(status, sizeof(status), "Server Info:\n");
+		Q_strcat(status, sizeof(status), "------------------------------------------------\n");
+
+		switch (level.gametype)
+		{
+			case GT_FFA:
+				break;
+			case GT_DUEL:
+				Q_strcat(status, sizeof(status), va("Duel frag limit : %i\n", duel_fraglimit.integer));
+				break;
+			case GT_TEAM:
+				break;
+			case GT_CTF:
+				Q_strcat(status, sizeof(status), va("Capture limit   : %i\n", capturelimit.integer));
+				Q_strcat(status, sizeof(status), va("g_maxForceRank  : %i\n", g_maxForceRank.integer));
+				break;
+			default:
+				break;
+		}
+
+		Q_strcat(status, sizeof(status), va("dmflags         : %i\n", dmflags.integer));
+		Q_strcat(status, sizeof(status), va("Frag limit      : %i\n", fraglimit.integer));
+		Q_strcat(status, sizeof(status), va("Time limit      : %i\n", timelimit.integer));
+		Q_strcat(status, sizeof(status), va("Game Info       : %s - %s\n", GAMEVERSION, __DATE__));
+		Q_strcat(status, sizeof(status), va("sv_fps          : %i\n", sv_fps.integer));
+
+		Q_strcat(status, sizeof(status), "\n");
+
+		Q_strcat(status, sizeof(status), "Server status:\n");
+		Q_strcat(status, sizeof(status), "------------------------------------------------\n");
+		trap->Cvar_VariableStringBuffer("sv_hostname", buf, sizeof(buf));
+		Q_strcat(status, sizeof(status), va("Hostname : %s"S_COLOR_WHITE"\n", buf));
+		Q_strcat(status, sizeof(status), va("Version  : %s\n", VERSION_STRING_DOTTED));
+		trap->Cvar_VariableStringBuffer("net_ip", buf, sizeof(buf));
+		Q_strcat(status, sizeof(status), va("UDP/IP   : %s:", buf));
+		trap->Cvar_VariableStringBuffer("net_port", buf, sizeof(buf));
+		Q_strcat(status, sizeof(status), va("%s, os(%s), Type(%s)\n", buf, STATUS_OS, ded_table[trap->Cvar_VariableIntegerValue("sv_dedicated")]));
+		trap->Cvar_VariableStringBuffer("mapname", buf, sizeof(buf));
+		Q_strcat(status, sizeof(status), va("Map      : %s\n", buf));
+		Q_strcat(status, sizeof(status), va("Gametype : %i, %s", g_gametype.integer, BG_GetGametypeString(g_gametype.integer)));
+		if (level.gametype >= GT_TEAM)
+			Q_strcat(status, sizeof(status), " (Red Team vs Blue Team)");
+		Q_strcat(status, sizeof(status), "\n");
+		Q_strcat(status, sizeof(status), va("Players  : %i Humans, %i Bots (%i max)\n", humans, bots, sv_maxclients.integer - trap->Cvar_VariableIntegerValue("sv_privateClients")));
+		Q_strcat(status, sizeof(status), "\n");
+
+		Q_strcat(status, sizeof(status), "Game Info:\n");
+		Q_strcat(status, sizeof(status), "------------------------------------------------\n");
+
+		if (timelimit.integer >= 1)
+		{
+			int msec, mins, seconds, tens;
+
+			msec = level.time - level.startTime;
+
+			seconds = msec / 1000;
+			mins = seconds / 60;
+			seconds -= mins * 60;
+			tens = seconds / 10;
+			seconds -= tens * 10;
+
+			Q_strcat(status, sizeof(status), va("Time left      : %i:%i%i(%i)\n",
+				(timelimit.integer - 1) - mins,
+				6 - tens,
+				9 - seconds,
+				timelimit.integer));
+		}
+		else
+			Q_strcat(status, sizeof(status), "Time left      : No timelimit\n");
+
+		switch (level.gametype)
+		{
+			case GT_FFA:
+				if (fraglimit.integer >= 1)
+				{
+					Q_strcat(status, sizeof(status), va("Frag left      : %i(%i)\n", fraglimit.integer - level.teamScores[TEAM_FREE], fraglimit.integer));
+				}
+				else
+					Q_strcat(status, sizeof(status), "Frag left      : No fraglimit\n");
+
+				Q_strcat(status, sizeof(status), va("Ping average   : Ingame %i\n", freePing / freeCount));
+
+				Q_strcat(status, sizeof(status), va("Player count   : Total %i, Ingame %i, Spectator %i\n",
+					humans + bots,
+					TeamCount(-1, TEAM_FREE),
+					TeamCount(-1, TEAM_SPECTATOR)));
+				break;
+			case GT_DUEL:
+				Q_strncpyz(player1Duel, level.clients[level.sortedClients[0]].pers.netname_nocolor, sizeof(player1Duel));
+				Q_strncpyz(player2Duel, level.clients[level.sortedClients[1]].pers.netname_nocolor, sizeof(player2Duel));
+
+				if (fraglimit.integer > 1)
+				{
+					if (level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE] > level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE])
+						Q_strcat(status, sizeof(status), va("Frag left      : %i(%i), (%s) Leader\n", fraglimit.integer - level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE], fraglimit.integer, player1Duel));
+					else if (level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE] > level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE])
+						Q_strcat(status, sizeof(status), va("Frag left      : %i(%i), (%s) Leader\n", fraglimit.integer - level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE], fraglimit.integer, player2Duel));
+					else
+						Q_strcat(status, sizeof(status), va("Frag left      : %i(%i), Both are tied\n", fraglimit.integer - level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE], fraglimit.integer));
+				}
+				else
+					Q_strcat(status, sizeof(status), "Frag left      : No fraglimit\n");
+
+				Q_strcat(status, sizeof(status), va("Ping average   : Ingame %i\n", (level.clients[level.sortedClients[0]].ps.ping + level.clients[level.sortedClients[1]].ps.ping) / 2));
+
+				Q_strcat(status, sizeof(status), va("Player count   : Total %i, Ingame %i, Spectator %i\n",
+					humans + bots,
+					TeamCount(-1, TEAM_FREE),
+					TeamCount(-1, TEAM_SPECTATOR)));
+
+				if (level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE] == level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE])
+					Q_strcat(status, sizeof(status), "Score          : Both are tied\n");
+				else if (level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE] > level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE])
+					Q_strcat(status, sizeof(status), va("Score          : (%s) %i Leader, (%s) %i\n", player1Duel, level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE], player2Duel, level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE]));
+				else
+					Q_strcat(status, sizeof(status), va("Score          : (%s) %i, (%s) %i Leader\n", player1Duel, level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE], player2Duel, level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE]));
+				break;
+			case GT_TEAM:
+				if (fraglimit.integer >= 1)
+				{
+					if (level.teamScores[TEAM_RED] > level.teamScores[TEAM_BLUE])
+						Q_strcat(status, sizeof(status), va("Frag left      : %i(%i), Red Team Lead\n", fraglimit.integer - level.teamScores[TEAM_RED], fraglimit.integer));
+					else if (level.teamScores[TEAM_BLUE] > level.teamScores[TEAM_RED])
+						Q_strcat(status, sizeof(status), va("Frag left      : %i(%i), Blue Team Lead\n", fraglimit.integer - level.teamScores[TEAM_BLUE], fraglimit.integer));
+					else
+						Q_strcat(status, sizeof(status), va("Frag left      : %i(%i), Teams are tied\n", fraglimit.integer - level.teamScores[TEAM_RED], fraglimit.integer));
+				}
+				else
+					Q_strcat(status, sizeof(status), "Frag left      : No fraglimit\n");
+
+				Q_strcat(status, sizeof(status), va("Player count   : Total %i, Red Team %i, Blue Team %i, Spectator %i\n",
+					humans + bots,
+					TeamCount(-1, TEAM_RED),
+					TeamCount(-1, TEAM_BLUE),
+					TeamCount(-1, TEAM_SPECTATOR)));
+
+				Q_strcat(status, sizeof(status), va("Ping average   : Red Team %i, Blue Team %i\n",
+					(redPing == 0 || redCount == 0) ? 0 : redPing / redCount,
+					(bluePing == 0 || blueCount == 0) ? 0 : bluePing / blueCount));
+
+				if (level.teamScores[TEAM_RED] == level.teamScores[TEAM_BLUE])
+					Q_strcat(status, sizeof(status), va("Score          : Teams are tied (Red Team:%i - Blue Team:%i)\n", level.teamScores[TEAM_RED], level.teamScores[TEAM_BLUE]));
+				else if (level.teamScores[TEAM_RED] > level.teamScores[TEAM_BLUE])
+					Q_strcat(status, sizeof(status), va("Score          : Red Team %i (Lead), Blue Team %i\n", level.teamScores[TEAM_RED], level.teamScores[TEAM_BLUE]));
+				else
+					Q_strcat(status, sizeof(status), va("Score          : Red Team %i, Blue Team %i (Lead)\n", level.teamScores[TEAM_RED], level.teamScores[TEAM_BLUE]));
+				break;
+			case GT_CTF:
+				if (capturelimit.integer >= 1)
+				{
+					if (level.teamScores[TEAM_RED] > level.teamScores[TEAM_BLUE])
+						Q_strcat(status, sizeof(status), va("Capture left   : %i(%i), Red Team Lead\n", capturelimit.integer - level.teamScores[TEAM_RED], capturelimit.integer));
+					else if (level.teamScores[TEAM_BLUE] > level.teamScores[TEAM_RED])
+						Q_strcat(status, sizeof(status), va("Capture left   : %i(%i), Blue Team Lead\n", capturelimit.integer - level.teamScores[TEAM_BLUE], capturelimit.integer));
+					else
+						Q_strcat(status, sizeof(status), va("Capture left   : %i(%i), Teams are tied\n", capturelimit.integer - level.teamScores[TEAM_RED], capturelimit.integer));
+				}
+
+				Q_strcat(status, sizeof(status), va("Player count   : Total %i, Red Team %i, Blue Team %i, Spectator %i\n",
+					humans + bots,
+					TeamCount(-1, TEAM_RED),
+					TeamCount(-1, TEAM_BLUE),
+					TeamCount(-1, TEAM_SPECTATOR)));
+
+				Q_strcat(status, sizeof(status), va("Ping average   : Red Team %i, Blue Team %i\n",
+					(redPing == 0 || redCount == 0) ? 0 : redPing / redCount,
+					(bluePing == 0 || blueCount == 0) ? 0 : bluePing / blueCount));
+
+				if (level.teamScores[TEAM_RED] == level.teamScores[TEAM_BLUE])
+					Q_strcat(status, sizeof(status), va("Capture        : Teams are tied (Red Team:%i - Blue Team:%i)\n", level.teamScores[TEAM_RED], level.teamScores[TEAM_BLUE]));
+				else if (level.teamScores[TEAM_RED] > level.teamScores[TEAM_BLUE])
+					Q_strcat(status, sizeof(status), va("Capture        : Red Team %i (Lead), Blue Team %i\n", level.teamScores[TEAM_RED], level.teamScores[TEAM_BLUE]));
+				else
+					Q_strcat(status, sizeof(status), va("Capture        : Red Team %i, Blue Team %i (Lead)\n", level.teamScores[TEAM_RED], level.teamScores[TEAM_BLUE]));
+
+				if (someoneHasRedFlag == qtrue || someoneHasBlueFlag == qtrue)
+				{
+					if (someoneHasRedFlag == qtrue)
+						Q_strcat(status, sizeof(status), va("Flag           : (%s) has the Red Team flag\n", whoHasRedFlag));
+					else if (someoneHasBlueFlag == qtrue)
+						Q_strcat(status, sizeof(status), va("Flag           : (%s) has the Blue Team flag\n", whoHasBlueFlag));
+				}
+				else
+					Q_strcat(status, sizeof(status), "Flag           : None of the teams has the flag\n");
+				break;
+			default:
+				Q_strcat(status, sizeof(status), "No game info for this gametype\n");
+				break;
+		}
+
+		Q_strcat(status, sizeof(status), "\n");
+
+		Q_strcat(status, sizeof(status), "ID Score Ping Name\n");
+		Q_strcat(status, sizeof(status), "-- ----- ---- -------------------------------\n");
+
+		for (i = 0, cl = level.clients; i < level.maxclients; i++, cl++)
+		{
+			if (cl->pers.connected == CON_DISCONNECTED)
+				continue;
+
+			Q_strcat(status, sizeof(status), va("%2i ", i)); //ID
+			Q_strcat(status, sizeof(status), va("%5i ", cl->ps.persistant[PERS_SCORE])); //Score
+
+			if (cl->pers.connected == CON_CONNECTING)
+				Q_strcat(status, sizeof(status), "CNCT "); //Ping
+			else
+				Q_strcat(status, sizeof(status), va("%4i ", cl->ps.ping < 999 ? cl->ps.ping : 999)); //Ping
+
+			Q_strcat(status, sizeof(status), va("%s "S_COLOR_WHITE "\n", cl->pers.netname)); //Name
+		}
+	}
+	return status;
+}
+
+
+/*
+==================
+Cmd_Status_f
+
+Request server status
+==================
+*/
+void Cmd_Status_f(gentity_t *ent) {
+	
+	if (g_disablecmdsvstatus.integer)
+		return;
+
+	char *status = GetStatusString();
+	char buffer[1012] = { 0 };                        // 1012 because max server command length is 1022, and we're using 10 chars for the print portion.
+	int statusLength = strlen(status);
+	int currentProgress = 0;
+
+	while (currentProgress < statusLength)
+	{
+		Q_strncpyz(buffer, &status[currentProgress], sizeof(buffer));
+		trap->SendServerCommand(ent - g_entities, va("print \"%s\"", buffer));
+		currentProgress += strlen(buffer);
+	}
+}
+
 
 /*
 ==================
@@ -532,6 +935,9 @@ Cmd_Kill_f
 =================
 */
 void Cmd_Kill_f( gentity_t *ent ) {
+	if(!g_disableendstats.integer)
+		ent->client->pers.damageTaken += (ent->health + ent->client->ps.stats[STAT_ARMOR]);
+
 	G_Kill( ent );
 }
 
@@ -1900,6 +2306,30 @@ qboolean G_VoteClientkick( gentity_t *ent, int numArgs, const char *arg1, const 
 	return qtrue;
 }
 
+qboolean G_VoteForceSpectator(gentity_t *ent, int numArgs, const char *arg1, const char *arg2) {
+	int n = atoi(arg2);
+
+	if (n < 0 || n >= MAX_CLIENTS) {
+		trap->SendServerCommand(ent - g_entities, va("print \"invalid client number %d.\n\"", n));
+		return qfalse;
+	}
+
+	if (g_entities[n].client->pers.connected != CON_CONNECTED) {
+		trap->SendServerCommand(ent - g_entities, va("print \"there is no client with the client number %d.\n\"", n));
+		return qfalse;
+	}
+
+	if (g_entities[n].client->sess.sessionTeam == TEAM_SPECTATOR) {
+		trap->SendServerCommand(ent - g_entities, va("print \"client number %d already spectator.\n\"", n));
+		return qfalse;
+	}
+
+	Com_sprintf(level.voteString, sizeof(level.voteString), "forceteam %s spectator", arg2);
+	Com_sprintf(level.voteDisplayString, sizeof(level.voteDisplayString), "forcespec %s", g_entities[n].client->pers.netname);
+	Q_strncpyz(level.voteStringClean, level.voteString, sizeof(level.voteStringClean));
+	return qtrue;
+}
+
 qboolean G_VoteFraglimit( gentity_t *ent, int numArgs, const char *arg1, const char *arg2 ) {
 	int n = Com_Clampi( 0, 0x7FFFFFFF, atoi( arg2 ) );
 	Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %i", arg1, n );
@@ -2095,6 +2525,7 @@ static voteString_t validVoteStrings[] = {
 	//	vote string				aliases										# args	valid gametypes							exec delay		short help
 	{	"capturelimit",			"caps",				G_VoteCapturelimit,		1,		GTB_CTF|GTB_CTY,						qtrue,			"<num>" },
 	{	"clientkick",			NULL,				G_VoteClientkick,		1,		GTB_ALL,								qfalse,			"<clientnum>" },
+	{ "forcespec",				"spec",				G_VoteForceSpectator,	1,		GTB_ALL,								qtrue,			"<clientnum>" },
 	{	"fraglimit",			"frags",			G_VoteFraglimit,		1,		GTB_ALL & ~(GTB_SIEGE|GTB_CTF|GTB_CTY),	qtrue,			"<num>" },
 	{	"g_doWarmup",			"dowarmup warmup",	G_VoteWarmup,			1,		GTB_ALL,								qtrue,			"<0-1>" },
 	{	"g_gametype",			"gametype gt mode",	G_VoteGametype,			1,		GTB_ALL,								qtrue,			"<num or name>" },
@@ -3391,11 +3822,14 @@ command_t commands[] = {
 	{ "noclip",				Cmd_Noclip_f,				CMD_CHEAT|CMD_ALIVE|CMD_NOINTERMISSION },
 	{ "notarget",			Cmd_Notarget_f,				CMD_CHEAT|CMD_ALIVE|CMD_NOINTERMISSION },
 	{ "npc",				Cmd_NPC_f,					CMD_CHEAT|CMD_ALIVE },
+	{ "playerlist",			Cmd_PlayerList_f,			0 },
 	{ "say",				Cmd_Say_f,					0 },
 	{ "say_team",			Cmd_SayTeam_f,				0 },
 	{ "score",				Cmd_Score_f,				0 },
 	{ "setviewpos",			Cmd_SetViewpos_f,			CMD_CHEAT|CMD_NOINTERMISSION },
 	{ "siegeclass",			Cmd_SiegeClass_f,			CMD_NOINTERMISSION },
+	{ "stats",				Cmd_Stats_f,				0 },
+	{ "svstatus",			Cmd_Status_f,				0 },
 	{ "team",				Cmd_Team_f,					CMD_NOINTERMISSION },
 //	{ "teamtask",			Cmd_TeamTask_f,				CMD_NOINTERMISSION },
 	{ "teamvote",			Cmd_TeamVote_f,				CMD_NOINTERMISSION },

@@ -44,7 +44,7 @@ extern vec3_t gPainPoint;
 //==================================================================
 
 // the "gameversion" client command will print this plus compile date
-#define	GAMEVERSION	"OpenJK"
+#define	GAMEVERSION	"Stats_Mod_Beta"
 
 #define SECURITY_LOG "security.log"
 
@@ -505,6 +505,15 @@ typedef struct clientPersistant_s {
 	int			vote, teamvote; // 0 = none, 1 = yes, 2 = no
 
 	char		guid[33];
+
+	int			damageDealt;
+	int			damageTaken;
+	int			damageTeam;
+	int			actualKillsInARow;
+	int			StoredKillsInARow;
+	float		ratio;
+	float		dmgRatio;
+
 } clientPersistant_t;
 
 typedef struct renderInfo_s
@@ -796,6 +805,8 @@ struct gclient_s {
 		int		drainDebounce;
 		int		lightningDebounce;
 	} force;
+
+	qboolean	doubleKill;
 };
 
 //Interest points
@@ -1008,6 +1019,8 @@ typedef struct level_locals_s {
 	gametype_t	gametype;
 	char		mapname[MAX_QPATH];
 	char		rawmapname[MAX_QPATH];
+
+	qboolean	firstBlood;
 } level_locals_t;
 
 
@@ -1112,6 +1125,7 @@ void	G_MuteSound( int entnum, int channel );
 void	G_Sound( gentity_t *ent, int channel, int soundIndex );
 void	G_SoundAtLoc( vec3_t loc, int channel, int soundIndex );
 void	G_EntitySound( gentity_t *ent, int channel, int soundIndex );
+void	G_EntitySoundGlobal(gentity_t *ent, int channel, int soundIndex);
 void	TryUse( gentity_t *ent );
 void	G_SendG2KillQueue(void);
 void	G_KillG2Queue(int entNum);

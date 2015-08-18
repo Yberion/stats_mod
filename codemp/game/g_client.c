@@ -2740,6 +2740,15 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	}
 	G_LogPrintf( "ClientBegin: %i\n", clientNum );
 
+	if (!g_disableendstats.integer)
+	{
+		ent->client->pers.damageDealt = 0;
+		ent->client->pers.damageTaken = 0;
+		ent->client->pers.damageTeam = 0;
+		ent->client->pers.ratio = 0.00f;
+		ent->client->pers.dmgRatio = 0.00f;
+	}
+
 	// count current clients and rank for scoreboard
 	CalculateRanks();
 
@@ -3839,6 +3848,9 @@ void ClientSpawn(gentity_t *ent) {
 	//rww - make sure client has a valid icarus instance
 	trap->ICARUS_FreeEnt( (sharedEntity_t *)ent );
 	trap->ICARUS_InitEnt( (sharedEntity_t *)ent );
+
+	if (!g_disableendstats.integer)
+		ent->client->pers.actualKillsInARow = 0;
 }
 
 

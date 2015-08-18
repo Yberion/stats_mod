@@ -1408,6 +1408,15 @@ void G_EntitySound( gentity_t *ent, int channel, int soundIndex ) {
 	te->s.trickedentindex = channel;
 }
 
+void G_EntitySoundGlobal(gentity_t *ent, int channel, int soundIndex) {
+	gentity_t	*te;
+
+	te = G_TempEntity(ent->r.currentOrigin, EV_GLOBAL_SOUND);
+	te->s.eventParm = soundIndex;
+	te->s.clientNum = ent->s.number;
+	te->s.trickedentindex = channel;
+}
+
 //To make porting from SP easier.
 void G_SoundOnEnt( gentity_t *ent, int channel, const char *soundPath )
 {
