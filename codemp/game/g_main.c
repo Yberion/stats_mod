@@ -2154,7 +2154,7 @@ void DisplayEndStats(void) {
 	char buffer[1012] = { 0 };			// 1012 because max server command length is 1022, and we're using 10 chars for the print portion.
 	int statusLength = strlen(status);
 	int currentProgress = 0;
-	int i;
+	int i = 0;
 	char lastColor[2] = { 0 }, colorFromPreviousPass[2] = { 0 };
 	qboolean needManyPass = qfalse;
 
