@@ -207,6 +207,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	memset( &level, 0, sizeof( level ) );
 	level.time = levelTime;
 	level.startTime = levelTime;
+	level.displayTime = levelTime;
 
 	level.follow1 = level.follow2 = -1;
 
