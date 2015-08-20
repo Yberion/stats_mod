@@ -2615,7 +2615,7 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 			{
 				attacker->client->pers.actualKillsInARow++;
 
-				if (((level.teamScores[TEAM_RED] == 0 && level.teamScores[TEAM_BLUE] == 1) || (level.teamScores[TEAM_BLUE] == 0 && level.teamScores[TEAM_RED] == 1)) && !level.firstBlood)
+				if ((level.teamScores[attacker->client->ps.persistant[PERS_TEAM]] > level.teamScores[self->client->ps.persistant[PERS_TEAM]] && (level.teamScores[TEAM_RED] == 0 || level.teamScores[TEAM_BLUE] == 0)) && !level.firstBlood)
 				{
 					if (!g_disablemodsounds.integer)
 						G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/firstblood"));
@@ -2677,9 +2677,23 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 				self->client->ps.persistant[PERS_PLAYEREVENTS] ^= PLAYEREVENT_GAUNTLETREWARD;
 			}
 
+			//check for triple kill first
+			if ((level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME) && attacker->client->doubleKill == qtrue && !g_disableendstats.integer)
+			{
+				if (!g_disablemodsounds.integer)
+					G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/triplekill"));
+				
+				//No more a double kill
+				attacker->client->doubleKill = qfalse;
+
+				//If we just did a triple kill then reset the timer
+				attacker->client->lastKillTime = 0;
+				attacker->client->WasATripleKill = qtrue;
+			}
+						
 			// check for two kills in a short amount of time
 			// if this is close enough to the last kill, give a reward sound
-			if ( (level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME) && !attacker->client->doubleKill) {
+			if ((level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME) && attacker->client->WasATripleKill == qfalse) {
 				// play excellent on player
 				attacker->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
 
@@ -2689,17 +2703,15 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 				{
 					if (!g_disablemodsounds.integer)
 						G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/doublekill"));
+					
 					attacker->client->doubleKill = qtrue;
 				}
 			}
-			else if ((level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME) && attacker->client->doubleKill && !g_disableendstats.integer)
-			{
-				if (!g_disablemodsounds.integer)
-					G_EntitySoundGlobal(attacker, CHAN_ANNOUNCER, G_SoundIndex("sound/stats_mod/triplekill"));
-				attacker->client->doubleKill = qfalse;
-			}
-			
-			attacker->client->lastKillTime = level.time;
+		
+			if (attacker->client->WasATripleKill == qfalse)
+				attacker->client->lastKillTime = level.time;
+			else
+				attacker->client->WasATripleKill = qfalse;
 
 		}
 	} else {

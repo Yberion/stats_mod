@@ -122,6 +122,72 @@ void Cmd_Score_f( gentity_t *ent ) {
 
 /*
 ==================
+Cmd_ModHelp_f
+==================
+*/
+void Cmd_ModHelp_f(gentity_t *ent) {
+	char modhelp[1012] = { 0 };
+
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "Mod created by " S_COLOR_RED "Yberion" S_COLOR_WHITE "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "I used OpenJK as codebase: https://github.com/JACoders/OpenJK\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "Additional package:\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_CYAN "Sound pack:" S_COLOR_WHITE " http://bit.ly/1WFnzeO\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "This sound pack adds many sounds like First Blood, Dominating, Monsterkill, Double Kill, etc.\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "List of commands:\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_CYAN "/playerlist" S_COLOR_WHITE "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "Displays every connected client and shows if they are in game or not.\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_CYAN "/stats" S_COLOR_WHITE "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "Displays your personal stats such as kills, deaths, suicides, etc.\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_CYAN "/svstatus" S_COLOR_WHITE "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "Displays a wide range of information about the server.\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_CYAN "/callvote forcespec X" S_COLOR_WHITE "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "Allows you to " S_COLOR_YELLOW "forceteam X spectator" S_COLOR_WHITE " a player without rcon acces.\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "After each round there will be a wide range of information displayed in the console.\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "You will then be able te see how much damage you dealt or team kills for exemple.\n");
+	Q_strcat(modhelp, sizeof(modhelp), "\n");
+
+	trap->SendServerCommand(ent - g_entities, va("print \"%s\"", modhelp));
+}
+
+/*
+==================
+Cmd_Test_f
+
+Request current personal stats
+==================
+*/
+void Cmd_Test_f(gentity_t *ent) {
+
+	char buffer[1012] = { 0 };			// 1012 because max server command length is 1022, and we're using 10 chars for the print portion.
+	int i = 0;
+	qboolean needManyPass = qfalse;
+
+
+	Q_strncpyz(buffer, ent->client->pers.netname, sizeof(buffer));
+
+	if (buffer[strlen(buffer) - 1] == '^')
+	{
+		while (buffer[strlen(buffer) - (1 + i)] == '^')
+		{
+			i++;
+		}
+		buffer[strlen(buffer) - i] = '\0';
+	}
+	trap->SendServerCommand(ent - g_entities, va("chat\"%i - %s\"", i, buffer));
+}
+
+/*
+==================
 Cmd_Stats_f
 
 Request current personal stats
@@ -161,14 +227,14 @@ void Cmd_PlayerList_f(gentity_t *ent) {
 		return;
 
 	gclient_t	*cl;
-	int	i;
+	int	i, total = 0;
 	char state[32] = { 0 }, pInfo[32] = { 0 };
 
 	trap->SendServerCommand(ent - g_entities, "print \"\n\"");
 	trap->SendServerCommand(ent - g_entities, "print \"ID Ping Name             Info\n\"");
 	trap->SendServerCommand(ent - g_entities, "print \"-- ----- --------------- -------\n\"");
 
-	for (i = 0, cl = level.clients; i < level.numConnectedClients; i++, cl++)
+	for (i = 0, cl = level.clients; i < level.maxclients; i++, cl++)
 	{
 		if (cl->pers.connected == CON_DISCONNECTED)
 			continue;
@@ -183,10 +249,13 @@ void Cmd_PlayerList_f(gentity_t *ent) {
 		else
 			memset(pInfo, 0, sizeof(pInfo));
 
+		total++;
+
 		trap->SendServerCommand(ent - g_entities, va("print \"%2i %4s %-15.15s "S_COLOR_GREEN"%7s\n\"", i, state, cl->pers.netname_nocolor, pInfo));
 	}
-}
 
+	trap->SendServerCommand(ent - g_entities, va("print \"\nTotal: %i\n\n\"", total));
+}
 
 /*
 ==================
@@ -240,7 +309,7 @@ char *GetStatusString(void) {
 
 		lastTime = level.time;
 
-		for (i = 0, cl = level.clients; i < level.numConnectedClients; i++, cl++)
+		for (i = 0, cl = level.clients; i < level.maxclients; i++, cl++)
 		{
 			if (cl->pers.connected == CON_CONNECTED)
 			{
@@ -3819,6 +3888,7 @@ command_t commands[] = {
 //	{ "kylesmash",			TryGrapple,					0 },
 	{ "levelshot",			Cmd_LevelShot_f,			CMD_CHEAT|CMD_ALIVE|CMD_NOINTERMISSION },
 	{ "maplist",			Cmd_MapList_f,				CMD_NOINTERMISSION },
+	{ "modhelp",			Cmd_ModHelp_f,				0 },
 	{ "noclip",				Cmd_Noclip_f,				CMD_CHEAT|CMD_ALIVE|CMD_NOINTERMISSION },
 	{ "notarget",			Cmd_Notarget_f,				CMD_CHEAT|CMD_ALIVE|CMD_NOINTERMISSION },
 	{ "npc",				Cmd_NPC_f,					CMD_CHEAT|CMD_ALIVE },
@@ -3834,6 +3904,7 @@ command_t commands[] = {
 //	{ "teamtask",			Cmd_TeamTask_f,				CMD_NOINTERMISSION },
 	{ "teamvote",			Cmd_TeamVote_f,				CMD_NOINTERMISSION },
 	{ "tell",				Cmd_Tell_f,					0 },
+	{ "test",				Cmd_Test_f,					0 },
 	{ "thedestroyer",		Cmd_TheDestroyer_f,			CMD_CHEAT|CMD_ALIVE|CMD_NOINTERMISSION },
 	{ "t_use",				Cmd_TargetUse_f,			CMD_CHEAT|CMD_ALIVE },
 	{ "voice_cmd",			Cmd_VoiceCommand_f,			CMD_NOINTERMISSION },

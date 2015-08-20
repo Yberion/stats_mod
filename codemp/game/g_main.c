@@ -2034,47 +2034,6 @@ static int QDECL FindBestPlayer(const void *a, const void *b)
 
 /*
 =================
-EndStatsChat
-
-Used to build a wide range of information that we will display in game chat
-=================
-*/
-void EndStatsChat(void) {
-
-	int	i, j;
-	int storedInGameClientNum[MAX_CLIENTS] = { 0 };
-
-	//Store all in game player's id in an array so we can use them after
-	for (i = 0, j = 0; i < MAX_CLIENTS; i++)
-	{
-		if (g_clients[i].pers.connected == CON_CONNECTED)
-		{
-			if (g_clients[i].sess.sessionTeam != TEAM_SPECTATOR)
-			{
-				storedInGameClientNum[j] = i;
-				j++;
-			}
-			else
-				continue;
-		}
-		else
-			continue;
-	}
-
-	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), SortByLeastDamageTaken);
-	trap->SendServerCommand(-1, va("chat \"Least damage taken: (" S_COLOR_GREEN "%i" S_COLOR_WHITE ") - %s" S_COLOR_WHITE "\"", g_clients[storedInGameClientNum[0]].pers.damageTaken, g_entities[storedInGameClientNum[0]].client->pers.netname));
-	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), SortByLeastDeaths);
-	trap->SendServerCommand(-1, va("chat \"Least deaths: (" S_COLOR_GREEN "%i" S_COLOR_WHITE ") - %s" S_COLOR_WHITE "\"", g_entities[storedInGameClientNum[0]].client->ps.persistant[PERS_KILLED], g_clients[storedInGameClientNum[0]].pers.netname));
-	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), SortByDamageDealt);
-	trap->SendServerCommand(-1, va("chat \"Most damage dealt: (" S_COLOR_GREEN "%i" S_COLOR_WHITE ") - %s" S_COLOR_WHITE "\"", g_clients[storedInGameClientNum[0]].pers.damageDealt, g_clients[storedInGameClientNum[0]].pers.netname));
-	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), SortByKills);
-	trap->SendServerCommand(-1, va("chat \"Most kills: (" S_COLOR_GREEN "%i" S_COLOR_WHITE ") - %s" S_COLOR_WHITE "\"", g_clients[storedInGameClientNum[0]].ps.persistant[PERS_SCORE], g_clients[storedInGameClientNum[0]].pers.netname));
-	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), FindBestPlayer);
-	trap->SendServerCommand(-1, va("chat \"" S_COLOR_RED "->" S_COLOR_WHITE "Best player (global ratio): " S_COLOR_GREEN "%.2f" S_COLOR_WHITE " - %s" S_COLOR_WHITE "\"", ((g_clients[storedInGameClientNum[0]].pers.ratio + g_clients[storedInGameClientNum[0]].pers.dmgRatio) / 2), g_clients[storedInGameClientNum[0]].pers.netname));
-}
-
-/*
-=================
 BuildEndStats
 
 Used to build a wide range of information that we will display in console
@@ -2083,7 +2042,7 @@ Used to build a wide range of information that we will display in console
 char *BuildEndStats(void) {
 
 	static char status[8192] = { 0 };
-	int	i, j, FindBestPlayerID = 0;
+	int	i, j = 0, findBestPlayer = 0;
 	int storedInGameClientNum[MAX_CLIENTS] = { 0 };
 	char    ratioString[16] = { 0 }, dmgRatioString[16] = { 0 };
 
@@ -2106,11 +2065,11 @@ char *BuildEndStats(void) {
 
 	//Find the best player so we can sort all clients from the best to the weakest
 	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), FindBestPlayer);
-	FindBestPlayerID = storedInGameClientNum[0];
+	findBestPlayer = storedInGameClientNum[0];
 
 	Q_strcat(status, sizeof(status), "\n");
-	Q_strcat(status, sizeof(status), "T | Name            Kills KillsRow Deaths Suicides TKills       Ratio | DmgDealt DmgTaken DmgTeam        DmgRatio | GRatio\n");
-	Q_strcat(status, sizeof(status), "- | --------------- ----- -------- ------ -------- ------ ----------- | -------- -------- ------- --------------- | ------\n");
+	Q_strcat(status, sizeof(status), "T | Name            Kills Deaths KillsRow Suicides TKills       Ratio | DmgDealt DmgTaken DmgTeam        DmgRatio | GRatio\n");
+	Q_strcat(status, sizeof(status), "- | --------------- ----- ------ -------- -------- ------ ----------- | -------- -------- ------- --------------- | ------\n");
 
 	for (i = 0; i < level.numPlayingClients; i++)
 	{
@@ -2128,11 +2087,11 @@ char *BuildEndStats(void) {
 
 		if (((g_clients[storedInGameClientNum[i]].pers.ratio + g_clients[storedInGameClientNum[i]].pers.dmgRatio) / 2) >= 1.00f)
 		{
-			Q_strcat(status, sizeof(status), va(" | %-15.15s %5i %8i %6i %8i %6i %5.2f %9s | %8i %8i %7i %7.2f %11s | " S_COLOR_GREEN "%6.2f" S_COLOR_WHITE "\n",
+			Q_strcat(status, sizeof(status), va(" | %-15.15s %5i %6i %8i %8i %6i %5.2f %9s | %8i %8i %7i %7.2f %11s | " S_COLOR_GREEN "%6.2f" S_COLOR_WHITE "\n",
 				g_clients[storedInGameClientNum[i]].pers.netname_nocolor,
 				g_clients[storedInGameClientNum[i]].ps.persistant[PERS_SCORE],
-				g_clients[storedInGameClientNum[i]].pers.StoredKillsInARow,
 				g_clients[storedInGameClientNum[i]].ps.persistant[PERS_KILLED],
+				g_clients[storedInGameClientNum[i]].pers.StoredKillsInARow,
 				g_clients[storedInGameClientNum[i]].ps.fd.suicides,
 				g_clients[storedInGameClientNum[i]].ps.persistant[PERS_TEAMKILL],
 				g_clients[storedInGameClientNum[i]].pers.ratio,
@@ -2145,11 +2104,11 @@ char *BuildEndStats(void) {
 		}
 		else
 		{
-			Q_strcat(status, sizeof(status), va(" | %-15.15s %5i %8i %6i %8i %6i %5.2f %9s | %8i %8i %7i %7.2f %11s | " S_COLOR_RED "%6.2f" S_COLOR_WHITE "\n",
+			Q_strcat(status, sizeof(status), va(" | %-15.15s %5i %6i %8i %8i %6i %5.2f %9s | %8i %8i %7i %7.2f %11s | " S_COLOR_RED "%6.2f" S_COLOR_WHITE "\n",
 				g_clients[storedInGameClientNum[i]].pers.netname_nocolor,
 				g_clients[storedInGameClientNum[i]].ps.persistant[PERS_SCORE],
-				g_clients[storedInGameClientNum[i]].pers.StoredKillsInARow,
 				g_clients[storedInGameClientNum[i]].ps.persistant[PERS_KILLED],
+				g_clients[storedInGameClientNum[i]].pers.StoredKillsInARow,
 				g_clients[storedInGameClientNum[i]].ps.fd.suicides,
 				g_clients[storedInGameClientNum[i]].ps.persistant[PERS_TEAMKILL],
 				g_clients[storedInGameClientNum[i]].pers.ratio,
@@ -2163,6 +2122,22 @@ char *BuildEndStats(void) {
 	}
 
 	Q_strcat(status, sizeof(status), "\n");
+
+	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), SortByLeastDamageTaken);
+	Q_strcat(status, sizeof(status), va("Least damage taken: (" S_COLOR_GREEN "%i" S_COLOR_WHITE ") - %s" S_COLOR_WHITE "\n", g_clients[storedInGameClientNum[0]].pers.damageTaken, g_entities[storedInGameClientNum[0]].client->pers.netname));
+	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), SortByLeastDeaths);
+	Q_strcat(status, sizeof(status), va("Least deaths: (" S_COLOR_GREEN "%i" S_COLOR_WHITE ") - %s" S_COLOR_WHITE "\n", g_entities[storedInGameClientNum[0]].client->ps.persistant[PERS_KILLED], g_clients[storedInGameClientNum[0]].pers.netname));
+	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), SortByDamageDealt);
+	Q_strcat(status, sizeof(status), va("Most damage dealt: (" S_COLOR_GREEN "%i" S_COLOR_WHITE ") - %s" S_COLOR_WHITE "\n", g_clients[storedInGameClientNum[0]].pers.damageDealt, g_clients[storedInGameClientNum[0]].pers.netname));
+	qsort(storedInGameClientNum, level.numPlayingClients, sizeof(storedInGameClientNum[0]), SortByKills);
+	Q_strcat(status, sizeof(status), va("Most kills: (" S_COLOR_GREEN "%i" S_COLOR_WHITE ") - %s" S_COLOR_WHITE "\n", g_clients[storedInGameClientNum[0]].ps.persistant[PERS_SCORE], g_clients[storedInGameClientNum[0]].pers.netname));
+	
+	Q_strcat(status, sizeof(status), "\n");
+
+	trap->SendServerCommand(-1, "chat \"\"");
+	trap->SendServerCommand(-1, va("chat \"" S_COLOR_RED "->" S_COLOR_WHITE "Best player (global ratio): " S_COLOR_GREEN "%.2f" S_COLOR_WHITE " - %s" S_COLOR_WHITE "\"", ((g_clients[findBestPlayer].pers.ratio + g_clients[findBestPlayer].pers.dmgRatio) / 2), g_clients[findBestPlayer].pers.netname));
+	trap->SendServerCommand(-1, "chat \"Check the console for more stats\"");
+	trap->SendServerCommand(-1, "chat \"\"");
 
 	return status;
 }
@@ -2178,6 +2153,7 @@ void DisplayEndStats(void) {
 	char buffer[1012] = { 0 };			// 1012 because max server command length is 1022, and we're using 10 chars for the print portion.
 	int statusLength = strlen(status);
 	int currentProgress = 0;
+	int i;
 	char lastColor[2] = { 0 }, colorFromPreviousPass[2] = { 0 };
 	qboolean needManyPass = qfalse;
 
@@ -2188,11 +2164,14 @@ void DisplayEndStats(void) {
 		//If the last char is ^ then don't count it in the actual buffer
 		if (buffer[strlen(buffer) - 1] == '^')
 		{
-			buffer[strlen(buffer) - 1] = '\0';
+			while (buffer[strlen(buffer) - (1 + i)] == '^')
+				i++;
+
+			buffer[strlen(buffer) - i] = '\0';
 		}
 
 		//Search for the last color used and store it in lastColor
-		for (int i = 0; i < strlen(buffer); i++)
+		for (i = 0; i < strlen(buffer); i++)
 		{
 			if (buffer[i] == '^' && (buffer[i + 1] >= '0' || buffer[i + 1] <= '9'))
 			{
@@ -2218,6 +2197,20 @@ void DisplayEndStats(void) {
 			colorFromPreviousPass[0] = lastColor[0];
 			colorFromPreviousPass[1] = lastColor[1];
 		}
+	}
+}
+
+/*
+==================
+AboutThisMod
+==================
+*/
+void AboutThisMod(void) {
+
+	if (level.time - level.displayTime > 300000)
+	{
+		trap->SendServerCommand(-1, "chat \"For more information about the mod running on this server, enter the following command in the console: /modhelp\"");
+		level.displayTime = level.time;
 	}
 }
 
@@ -2343,7 +2336,6 @@ void CheckExitRules( void ) {
 				if ( level.gametype == GT_TEAM && level.numPlayingClients > 0 && !g_disableendstats.integer)
 				{
 					DisplayEndStats();
-					EndStatsChat();
 				}
 				
 				LogExit( "Timelimit hit." );
@@ -2500,7 +2492,6 @@ void CheckExitRules( void ) {
 			if ( level.numPlayingClients > 0 && !g_disableendstats.integer)
 			{
 				DisplayEndStats();
-				EndStatsChat();
 			}
 			
 			LogExit( sKillLimit );
@@ -2520,7 +2511,6 @@ void CheckExitRules( void ) {
 			if ( level.numPlayingClients > 0 && !g_disableendstats.integer)
 			{
 				DisplayEndStats();
-				EndStatsChat();
 			}
 
 			LogExit( sKillLimit );
@@ -3760,6 +3750,9 @@ void G_RunFrame( int levelTime ) {
 
 	// for tracking changes
 	CheckCvars();
+
+	// Send a message every 3 minutes
+	AboutThisMod();
 
 #ifdef _G_FRAME_PERFANAL
 	iTimer_GameChecks = trap->PrecisionTimer_End(timer_GameChecks);

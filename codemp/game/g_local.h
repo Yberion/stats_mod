@@ -44,7 +44,7 @@ extern vec3_t gPainPoint;
 //==================================================================
 
 // the "gameversion" client command will print this plus compile date
-#define	GAMEVERSION	"Stats_Mod_Beta"
+#define	GAMEVERSION	"Stats_Mod_Beta 2"
 
 #define SECURITY_LOG "security.log"
 
@@ -663,6 +663,7 @@ struct gclient_s {
 	int			airOutTime;
 
 	int			lastKillTime;		// for multiple kill rewards
+	qboolean	WasATripleKill;
 
 	qboolean	fireHeld;			// used for hook
 	gentity_t	*hook;				// grapple hook if out
@@ -902,6 +903,7 @@ typedef struct level_locals_s {
 	int			framenum;
 	int			time;					// in msec
 	int			previousTime;			// so movers can back up when blocked
+	int			displayTime;
 
 	int			startTime;				// level.time the map was started
 
