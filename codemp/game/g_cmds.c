@@ -161,33 +161,6 @@ void Cmd_ModHelp_f(gentity_t *ent) {
 
 /*
 ==================
-Cmd_Test_f
-
-Request current personal stats
-==================
-*/
-void Cmd_Test_f(gentity_t *ent) {
-
-	char buffer[1012] = { 0 };			// 1012 because max server command length is 1022, and we're using 10 chars for the print portion.
-	int i = 0;
-	qboolean needManyPass = qfalse;
-
-
-	Q_strncpyz(buffer, ent->client->pers.netname, sizeof(buffer));
-
-	if (buffer[strlen(buffer) - 1] == '^')
-	{
-		while (buffer[strlen(buffer) - (1 + i)] == '^')
-		{
-			i++;
-		}
-		buffer[strlen(buffer) - i] = '\0';
-	}
-	trap->SendServerCommand(ent - g_entities, va("chat\"%i - %s\"", i, buffer));
-}
-
-/*
-==================
 Cmd_Stats_f
 
 Request current personal stats
@@ -3904,7 +3877,6 @@ command_t commands[] = {
 //	{ "teamtask",			Cmd_TeamTask_f,				CMD_NOINTERMISSION },
 	{ "teamvote",			Cmd_TeamVote_f,				CMD_NOINTERMISSION },
 	{ "tell",				Cmd_Tell_f,					0 },
-	{ "test",				Cmd_Test_f,					0 },
 	{ "thedestroyer",		Cmd_TheDestroyer_f,			CMD_CHEAT|CMD_ALIVE|CMD_NOINTERMISSION },
 	{ "t_use",				Cmd_TargetUse_f,			CMD_CHEAT|CMD_ALIVE },
 	{ "voice_cmd",			Cmd_VoiceCommand_f,			CMD_NOINTERMISSION },

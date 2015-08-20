@@ -3751,7 +3751,7 @@ void G_RunFrame( int levelTime ) {
 	// for tracking changes
 	CheckCvars();
 
-	// Send a message every 3 minutes
+	// Send a message every 5 minutes
 	AboutThisMod();
 
 #ifdef _G_FRAME_PERFANAL
