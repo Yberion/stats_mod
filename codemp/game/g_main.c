@@ -2208,9 +2208,12 @@ AboutThisMod
 */
 void AboutThisMod(void) {
 
-	if (level.time - level.displayTime > 300000)
+	if (level.time - level.displayTime > g_customeannouncementtime.integer)
 	{
-		trap->SendServerCommand(-1, "chat \"For more information about the mod running on this server, enter the following command in the console: /modhelp\"");
+		char customeAnnouncement[MAX_SAY_TEXT] = { 0 };
+
+		trap->Cvar_VariableStringBuffer("g_customeannouncement", customeAnnouncement, sizeof(customeAnnouncement));
+		trap->SendServerCommand(-1, va("chat \"%s\"", customeAnnouncement));
 		level.displayTime = level.time;
 	}
 }
@@ -3752,8 +3755,10 @@ void G_RunFrame( int levelTime ) {
 	// for tracking changes
 	CheckCvars();
 
+
 	// Send a message every 5 minutes
-	AboutThisMod();
+	if (!g_disableannouncement.integer)
+		AboutThisMod();
 
 #ifdef _G_FRAME_PERFANAL
 	iTimer_GameChecks = trap->PrecisionTimer_End(timer_GameChecks);

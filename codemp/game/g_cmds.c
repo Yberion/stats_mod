@@ -129,7 +129,8 @@ void Cmd_ModHelp_f(gentity_t *ent) {
 	char modhelp[1012] = { 0 };
 
 	Q_strcat(modhelp, sizeof(modhelp), "\n");
-	Q_strcat(modhelp, sizeof(modhelp), "Mod created by " S_COLOR_RED "Yberion" S_COLOR_WHITE "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "Stats Mod Beta 3 - Mod created by " S_COLOR_RED "Yberion" S_COLOR_WHITE "\n");
+	Q_strcat(modhelp, sizeof(modhelp), "Code repository: https://github.com/Yberion/stats_mod\n");
 	Q_strcat(modhelp, sizeof(modhelp), "\n");
 	Q_strcat(modhelp, sizeof(modhelp), "I used OpenJK as codebase: https://github.com/JACoders/OpenJK\n");
 	Q_strcat(modhelp, sizeof(modhelp), "\n");
