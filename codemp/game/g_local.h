@@ -903,7 +903,6 @@ typedef struct level_locals_s {
 	int			framenum;
 	int			time;					// in msec
 	int			previousTime;			// so movers can back up when blocked
-	int			displayTime;
 
 	int			startTime;				// level.time the map was started
 

@@ -791,7 +791,7 @@ gentity_t *SelectRandomFurthestSpawnPoint ( vec3_t avoidPoint, vec3_t origin, ve
 	}
 
 	// select a random spot from the spawn points furthest away
-	rnd = random() * (numSpots / 2);
+	rnd = Q_flrand(0.0f, 1.0f) * (numSpots / 2);
 
 	VectorCopy (list_spot[rnd]->s.origin, origin);
 	origin[2] += 9;
@@ -884,7 +884,7 @@ tryAgain:
 	}
 
 	// select a random spot from the spawn points furthest away
-	rnd = random() * (numSpots / 2);
+	rnd = Q_flrand(0.0f, 1.0f) * (numSpots / 2);
 
 	VectorCopy (list_spot[rnd]->s.origin, origin);
 	origin[2] += 9;
@@ -2748,7 +2748,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 		ent->client->pers.ratio = 0.00f;
 		ent->client->pers.dmgRatio = 0.00f;
 	}
-
+	
 	// count current clients and rank for scoreboard
 	CalculateRanks();
 
@@ -3848,7 +3848,7 @@ void ClientSpawn(gentity_t *ent) {
 	//rww - make sure client has a valid icarus instance
 	trap->ICARUS_FreeEnt( (sharedEntity_t *)ent );
 	trap->ICARUS_InitEnt( (sharedEntity_t *)ent );
-
+	
 	if (!g_disableendstats.integer)
 		ent->client->pers.actualKillsInARow = 0;
 }

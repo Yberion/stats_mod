@@ -564,7 +564,6 @@ void Cmd_Status_f(gentity_t *ent) {
 	}
 }
 
-
 /*
 ==================
 ConcatArgs
@@ -980,7 +979,7 @@ Cmd_Kill_f
 void Cmd_Kill_f( gentity_t *ent ) {
 	if(!g_disableendstats.integer)
 		ent->client->pers.damageTaken += (ent->health + ent->client->ps.stats[STAT_ARMOR]);
-
+	
 	G_Kill( ent );
 }
 
@@ -2568,7 +2567,7 @@ static voteString_t validVoteStrings[] = {
 	//	vote string				aliases										# args	valid gametypes							exec delay		short help
 	{	"capturelimit",			"caps",				G_VoteCapturelimit,		1,		GTB_CTF|GTB_CTY,						qtrue,			"<num>" },
 	{	"clientkick",			NULL,				G_VoteClientkick,		1,		GTB_ALL,								qfalse,			"<clientnum>" },
-	{ "forcespec",				"spec",				G_VoteForceSpectator,	1,		GTB_ALL,								qtrue,			"<clientnum>" },
+	{	"forcespec",				"spec",				G_VoteForceSpectator,	1,		GTB_ALL,								qtrue,			"<clientnum>" },
 	{	"fraglimit",			"frags",			G_VoteFraglimit,		1,		GTB_ALL & ~(GTB_SIEGE|GTB_CTF|GTB_CTY),	qtrue,			"<num>" },
 	{	"g_doWarmup",			"dowarmup warmup",	G_VoteWarmup,			1,		GTB_ALL,								qtrue,			"<0-1>" },
 	{	"g_gametype",			"gametype gt mode",	G_VoteGametype,			1,		GTB_ALL,								qtrue,			"<num or name>" },
@@ -3229,6 +3228,22 @@ void Cmd_SaberAttackCycle_f(gentity_t *ent)
 	{
 		return;
 	}
+
+	if ( level.intermissionQueued || level.intermissiontime )
+	{
+		trap->SendServerCommand( ent-g_entities, va( "print \"%s (saberAttackCycle)\n\"", G_GetStringEdString( "MP_SVGAME", "CANNOT_TASK_INTERMISSION" ) ) );
+		return;
+	}
+
+	if ( ent->health <= 0
+			|| ent->client->tempSpectate >= level.time
+			|| ent->client->sess.sessionTeam == TEAM_SPECTATOR )
+	{
+		trap->SendServerCommand( ent-g_entities, va( "print \"%s\n\"", G_GetStringEdString( "MP_SVGAME", "MUSTBEALIVE" ) ) );
+		return;
+	}
+
+
 	if ( ent->client->ps.weapon != WP_SABER )
 	{
         return;
@@ -3838,7 +3853,6 @@ int cmdcmp( const void *a, const void *b ) {
 	return Q_stricmp( (const char *)a, ((command_t*)b)->name );
 }
 
-/* This array MUST be sorted correctly by alphabetical name field */
 command_t commands[] = {
 	{ "addbot",				Cmd_AddBot_f,				0 },
 	{ "callteamvote",		Cmd_CallTeamVote_f,			CMD_NOINTERMISSION },
@@ -3904,7 +3918,7 @@ void ClientCommand( int clientNum ) {
 		return;
 	//end rww
 
-	command = (command_t *)bsearch( cmd, commands, numCommands, sizeof( commands[0] ), cmdcmp );
+	command = (command_t *)Q_LinearSearch( cmd, commands, numCommands, sizeof( commands[0] ), cmdcmp );
 	if ( !command )
 	{
 		trap->SendServerCommand( clientNum, va( "print \"Unknown command %s\n\"", cmd ) );

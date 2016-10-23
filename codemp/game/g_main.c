@@ -2485,9 +2485,6 @@ void CheckExitRules( void ) {
 	if ( level.gametype < GT_SIEGE && fraglimit.integer ) {
 		if ( level.teamScores[TEAM_RED] >= fraglimit.integer ) {
 			trap->SendServerCommand( -1, va("print \"Red %s\n\"", G_GetStringEdString("MP_SVGAME", "HIT_THE_KILL_LIMIT")) );
-			
-			sKillLimit = "Kill limit hit.";
-			
 			if (d_powerDuelPrint.integer)
 			{
 				Com_Printf("POWERDUEL WIN CONDITION: Kill limit (1)\n");
@@ -2504,9 +2501,6 @@ void CheckExitRules( void ) {
 
 		if ( level.teamScores[TEAM_BLUE] >= fraglimit.integer ) {
 			trap->SendServerCommand( -1, va("print \"Blue %s\n\"", G_GetStringEdString("MP_SVGAME", "HIT_THE_KILL_LIMIT")) );
-			
-			sKillLimit = "Kill limit hit.";
-			
 			if (d_powerDuelPrint.integer)
 			{
 				Com_Printf("POWERDUEL WIN CONDITION: Kill limit (2)\n");
