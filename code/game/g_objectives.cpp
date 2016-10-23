@@ -29,6 +29,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #define	G_OBJECTIVES_CPP
 
 #include "objectives.h"
+#include "qcommon/ojk_saved_game_helper.h"
 
 qboolean	missionInfo_Updated;
 
@@ -44,7 +45,7 @@ void OBJ_SetPendingObjectives(gentity_t *ent)
 
 	for (i=0;i<MAX_OBJECTIVES;++i)
 	{
-		if ((ent->client->sess.mission_objectives[i].status == OBJECTIVE_STAT_PENDING) && 
+		if ((ent->client->sess.mission_objectives[i].status == OBJECTIVE_STAT_PENDING) &&
 			(ent->client->sess.mission_objectives[i].display))
 		{
 			ent->client->sess.mission_objectives[i].status = OBJECTIVE_STAT_FAILED;
@@ -59,7 +60,12 @@ OBJ_SaveMissionObjectives
 */
 void OBJ_SaveMissionObjectives( gclient_t *client )
 {
-	gi.AppendToSaveGame(INT_ID('O','B','J','T'), client->sess.mission_objectives, sizeof(client->sess.mission_objectives));
+	ojk::SavedGameHelper saved_game(
+		::gi.saved_game);
+
+	saved_game.write_chunk(
+		INT_ID('O', 'B', 'J', 'T'),
+		client->sess.mission_objectives);
 }
 
 
@@ -84,7 +90,12 @@ OBJ_LoadMissionObjectives
 */
 void OBJ_LoadMissionObjectives( gclient_t *client )
 {
-	gi.ReadFromSaveGame(INT_ID('O','B','J','T'), (void *) &client->sess.mission_objectives, sizeof(client->sess.mission_objectives), NULL);
+	ojk::SavedGameHelper saved_game(
+		::gi.saved_game);
+
+	saved_game.read_chunk(
+		INT_ID('O', 'B', 'J', 'T'),
+		client->sess.mission_objectives);
 }
 
 

@@ -29,6 +29,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 	#include "tr_local.h"
 #endif
 
+#include "tr_common.h"
+
 #include "qcommon/matcomp.h"
 #if !defined(_QCOMMON_H_)
 	#include "../qcommon/qcommon.h"
@@ -102,12 +104,14 @@ public:
 	//rww - RAGDOLL_BEGIN
 	int				touchRender;
 	//rww - RAGDOLL_END
+
 	mdxaBone_t		boneMatrix; //final matrix
 	int				parent; // only set once
 	int				touch; // for minimal recalculation
 	CTransformBone()
 	{
 		touch=0;
+
 	//rww - RAGDOLL_BEGIN
 		touchRender = 0;
 	//rww - RAGDOLL_END
@@ -154,6 +158,7 @@ class CBoneCache
 			mFinalBones[index].touch=mCurrentTouch;
 		}
 	}
+
 //rww - RAGDOLL_BEGIN
 	void SmoothLow(int index)
 	{
@@ -198,6 +203,7 @@ class CBoneCache
 #endif// _DEBUG
 	}
 //rww - RAGDOLL_END
+
 public:
 	int					frameSize;
 	const mdxaHeader_t	*header;
@@ -217,6 +223,7 @@ public:
 	int				incomingTime;
 
 	int				mCurrentTouch;
+
 	//rww - RAGDOLL_BEGIN
 	int				mCurrentTouchRender;
 	int				mLastTouch;
@@ -241,8 +248,8 @@ public:
 
 		mNumBones = header->numBones;
 		mBones = new SBoneCalc[mNumBones];
-		mFinalBones = (CTransformBone*)Z_Malloc(sizeof(CTransformBone) * mNumBones, TAG_GHOUL2, qtrue, 16);
-		mSmoothBones = (CTransformBone*)Z_Malloc(sizeof(CTransformBone) * mNumBones, TAG_GHOUL2, qtrue, 16);
+		mFinalBones = (CTransformBone*) R_Malloc(sizeof(CTransformBone) * mNumBones, TAG_GHOUL2, qtrue);
+		mSmoothBones = (CTransformBone*) R_Malloc(sizeof(CTransformBone) * mNumBones, TAG_GHOUL2, qtrue);
 		mSkels = new mdxaSkel_t*[mNumBones];
 		mdxaSkelOffsets_t *offsets;
 		mdxaSkel_t		*skel;
@@ -256,6 +263,7 @@ public:
 			mFinalBones[i].parent=skel->parent;
 		}
 		mCurrentTouch=3;
+
 //rww - RAGDOLL_BEGIN
 		mLastTouch=2;
 		mLastLastTouch=1;
@@ -265,8 +273,8 @@ public:
 	{
 		delete [] mBones;
 		// Alignment
-		Z_Free(mFinalBones);
-		Z_Free(mSmoothBones);
+		R_Free(mFinalBones);
+		R_Free(mSmoothBones);
 		delete [] mSkels;
 	}
 
@@ -347,6 +355,7 @@ public:
 		}
 		return mFinalBones[index].boneMatrix;
 	}
+
 	//rww - RAGDOLL_BEGIN
 	const inline mdxaBone_t &EvalRender(int index)
 	{
@@ -388,8 +397,14 @@ public:
 	// Need to add in smoothing step?
 	CTransformBone *EvalFull(int index)
 	{
+#ifdef JK2_MODE
 //		Eval(index);
+
+// FIXME BBi Was commented
+		Eval(index);
+#else
 		EvalRender(index);
+#endif // JK2_MODE
 		if (mSmoothingActive)
 		{
 			return mSmoothBones + index;
@@ -2340,7 +2355,7 @@ void RenderSurfaces(CRenderSurface &RS)
 				for (k=range.first;k!=range.second;)
 				{
 					kcur=k;
-					k++;
+					++k;
 					GoreTextureCoordinates *tex=FindGoreRecord((*kcur).second.mGoreTag);
 					if (!tex ||											 // it is gone, lets get rid of it
 						(kcur->second.mDeleteTime && curTime>=kcur->second.mDeleteTime)) // out of time
@@ -2552,7 +2567,7 @@ void R_AddGhoulSurfaces( trRefEntity_t *ent ) {
 	shader_t		*gore_shader = 0;
 #endif
 	int				fogNum = 0;
-	bool			personalModel;
+	qboolean		personalModel;
 	int				cull;
 	int				i, whichLod, j;
 	skin_t			*skin;
@@ -2588,7 +2603,7 @@ void R_AddGhoulSurfaces( trRefEntity_t *ent ) {
 	RootMatrix(ghoul2,currentTime, ent->e.modelScale,rootMatrix);
 
    	// don't add third_person objects if not in a portal
-	personalModel = (ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.isPortal;
+	personalModel = (qboolean)((ent->e.renderfx & RF_THIRD_PERSON) && !tr.viewParms.isPortal);
 
 	int modelList[32];
 	assert(ghoul2.size()<=31);
@@ -2982,8 +2997,11 @@ void RB_SurfaceGhoul( CRenderableSurface *surf )
 		const mdxaBone_t *bone2;
 		for ( j = 0; j < numVerts; j++, baseVertex++,v++ )
 		{
-
+#ifdef JK2_MODE
+			bone = &bones->Eval(piBoneReferences[G2_GetVertBoneIndex( v, 0 )]);
+#else
 			bone = &bones->EvalRender(piBoneReferences[G2_GetVertBoneIndex( v, 0 )]);
+#endif // JK2_MODE
 			int iNumWeights = G2_GetVertWeights( v );
 			tess.normal[baseVertex][0] = DotProduct( bone->matrix[0], v->normal );
 			tess.normal[baseVertex][1] = DotProduct( bone->matrix[1], v->normal );
@@ -3000,7 +3018,11 @@ void RB_SurfaceGhoul( CRenderableSurface *surf )
 				fBoneWeight = G2_GetVertBoneWeightNotSlow( v, 0);
 				if (iNumWeights==2)
 				{
+#ifdef JK2_MODE
+					bone2 = &bones->Eval(piBoneReferences[G2_GetVertBoneIndex( v, 1 )]);
+#else
 					bone2 = &bones->EvalRender(piBoneReferences[G2_GetVertBoneIndex( v, 1 )]);
+#endif // JK2_MODE
 					/*
 					useless transposition
 					tess.xyz[baseVertex][0] =
@@ -3029,7 +3051,12 @@ void RB_SurfaceGhoul( CRenderableSurface *surf )
 					fTotalWeight=fBoneWeight;
 					for (k=1; k < iNumWeights-1 ; k++)
 					{
+#ifdef JK2_MODE
+						bone = &bones->Eval(piBoneReferences[G2_GetVertBoneIndex( v, k )]);
+#else
 						bone = &bones->EvalRender(piBoneReferences[G2_GetVertBoneIndex( v, k )]);
+#endif // JK2_MODE
+
 						fBoneWeight = G2_GetVertBoneWeightNotSlow( v, k);
 						fTotalWeight += fBoneWeight;
 
@@ -3037,7 +3064,12 @@ void RB_SurfaceGhoul( CRenderableSurface *surf )
 						tess.xyz[baseVertex][1] += fBoneWeight * ( DotProduct( bone->matrix[1], v->vertCoords ) + bone->matrix[1][3] );
 						tess.xyz[baseVertex][2] += fBoneWeight * ( DotProduct( bone->matrix[2], v->vertCoords ) + bone->matrix[2][3] );
 					}
+
+#ifdef JK2_MODE
+					bone = &bones->Eval(piBoneReferences[G2_GetVertBoneIndex( v, k )]);
+#else
 					bone = &bones->EvalRender(piBoneReferences[G2_GetVertBoneIndex( v, k )]);
+#endif // JK2_MODE
 					fBoneWeight	= 1.0f-fTotalWeight;
 
 					tess.xyz[baseVertex][0] += fBoneWeight * ( DotProduct( bone->matrix[0], v->vertCoords ) + bone->matrix[0][3] );
@@ -3514,7 +3546,7 @@ qboolean R_LoadMDXM( model_t *mod, void *buffer, const char *mod_name, qboolean 
 	mod->dataSize += size;
 
 	qboolean bAlreadyFound = qfalse;
-	mdxm = mod->mdxm = (mdxmHeader_t*) //Hunk_Alloc( size );
+	mdxm = mod->mdxm = (mdxmHeader_t*) //R_Hunk_Alloc( size );
 										RE_RegisterModels_Malloc(size, buffer, mod_name, &bAlreadyFound, TAG_MODEL_GLM);
 
 	assert(bAlreadyCached == bAlreadyFound);
@@ -3814,7 +3846,7 @@ qboolean R_LoadMDXA( model_t *mod, void *buffer, const char *mod_name, qboolean 
 	mod->dataSize  += size;
 
 	qboolean bAlreadyFound = qfalse;
-	mdxa = mod->mdxa = (mdxaHeader_t*) //Hunk_Alloc( size );
+	mdxa = mod->mdxa = (mdxaHeader_t*) //R_Hunk_Alloc( size );
 										RE_RegisterModels_Malloc(size, buffer, mod_name, &bAlreadyFound, TAG_MODEL_GLA);
 
 	assert(bAlreadyCached == bAlreadyFound);

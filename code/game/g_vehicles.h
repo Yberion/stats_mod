@@ -24,7 +24,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #define __G_VEHICLES_H
 
 #include "../qcommon/q_shared.h"
-#include "g_public.h"			   
+#include "g_public.h"
 
 typedef enum
 {
@@ -240,7 +240,7 @@ typedef struct
 	int			iDmgFX;			//effect to play on damage from a weapon or something
 	int			iArmorLowFX;	//played when armor is less than 30% of full
 	int			iArmorGoneFX;	//played when on armor is completely gone
-	
+
 	//Weapon stats
 	vehWeaponStats_t	weapon[MAX_VEHICLE_WEAPONS];
 
@@ -327,17 +327,17 @@ typedef struct
 	bool (*Eject)( Vehicle_t *pVeh, gentity_t *pEnt, qboolean forceEject );
 
 	// Eject all the inhabitants of this vehicle.
-	bool (*EjectAll)( Vehicle_t *pVeh );	
+	bool (*EjectAll)( Vehicle_t *pVeh );
 
 	// Start a delay until the vehicle dies.
 	void (*StartDeathDelay)( Vehicle_t *pVeh, int iDelayTime );
 
 	// Update death sequence.
 	void (*DeathUpdate)( Vehicle_t *pVeh );
-	
+
 	// Register all the assets used by this vehicle.
 	void (*RegisterAssets)( Vehicle_t *pVeh );
-	
+
 	// Initialize the vehicle (should be called by Spawn?).
 	bool (*Initialize)( Vehicle_t *pVeh );
 
@@ -354,7 +354,7 @@ typedef struct
 
 	// ProcessOrientCommands the Vehicle.
 	void (*ProcessOrientCommands)( Vehicle_t *pVeh );
-	
+
 	// Attachs all the riders of this vehicle to their appropriate position/tag (*driver, *pass1, *pass2, whatever...).
 	void (*AttachRiders)( Vehicle_t *pVeh );
 
@@ -428,11 +428,11 @@ extern void G_CreateWalkerNPC( Vehicle_t **pVeh, const char *strType );
 
 enum
 {
-	VEH_EJECT_LEFT, 
-	VEH_EJECT_RIGHT, 
-	VEH_EJECT_FRONT, 
-	VEH_EJECT_REAR, 
-	VEH_EJECT_TOP, 
+	VEH_EJECT_LEFT,
+	VEH_EJECT_RIGHT,
+	VEH_EJECT_FRONT,
+	VEH_EJECT_REAR,
+	VEH_EJECT_TOP,
 	VEH_EJECT_BOTTOM
 };
 
@@ -460,12 +460,32 @@ struct Muzzle
 	vec3_t m_vMuzzleDir;
 
 	// This is how long to wait before being able to fire a specific muzzle again. This is based on the firing rate
-	// so that a firing rate of 10 rounds/sec would make this value initially 100 miliseconds. 
+	// so that a firing rate of 10 rounds/sec would make this value initially 100 miliseconds.
 	int m_iMuzzleWait;
 
 	// whether this Muzzle was just fired or not (reset at muzzle flash code).
 	bool m_bFired;
 
+
+	void sg_export(
+		ojk::SavedGameHelper& saved_game) const
+	{
+		saved_game.write<float>(m_vMuzzlePos);
+		saved_game.write<float>(m_vMuzzleDir);
+		saved_game.write<int32_t>(m_iMuzzleWait);
+		saved_game.write<int8_t>(m_bFired);
+		saved_game.skip(3);
+	}
+
+	void sg_import(
+		ojk::SavedGameHelper& saved_game)
+	{
+		saved_game.read<float>(m_vMuzzlePos);
+		saved_game.read<float>(m_vMuzzleDir);
+		saved_game.read<int32_t>(m_iMuzzleWait);
+		saved_game.read<int8_t>(m_bFired);
+		saved_game.skip(3);
+	}
 };
 
 //defines for impact damage surface stuff
@@ -501,6 +521,25 @@ typedef struct
 	int			lastAmmoInc;
 	//which muzzle will fire next
 	int			nextMuzzle;
+
+
+	void sg_export(
+		ojk::SavedGameHelper& saved_game) const
+	{
+		saved_game.write<int32_t>(linked);
+		saved_game.write<int32_t>(ammo);
+		saved_game.write<int32_t>(lastAmmoInc);
+		saved_game.write<int32_t>(nextMuzzle);
+	}
+
+	void sg_import(
+		ojk::SavedGameHelper& saved_game)
+	{
+		saved_game.read<int32_t>(linked);
+		saved_game.read<int32_t>(ammo);
+		saved_game.read<int32_t>(lastAmmoInc);
+		saved_game.read<int32_t>(nextMuzzle);
+	}
 } vehWeaponStatus_t;
 
 typedef struct
@@ -515,6 +554,27 @@ typedef struct
 	int			enemyEntNum;
 	//how long to hold on to our current enemy
 	int			enemyHoldTime;
+
+
+	void sg_export(
+		ojk::SavedGameHelper& saved_game) const
+	{
+		saved_game.write<int32_t>(ammo);
+		saved_game.write<int32_t>(lastAmmoInc);
+		saved_game.write<int32_t>(nextMuzzle);
+		saved_game.write<int32_t>(enemyEntNum);
+		saved_game.write<int32_t>(enemyHoldTime);
+	}
+
+	void sg_import(
+		ojk::SavedGameHelper& saved_game)
+	{
+		saved_game.read<int32_t>(ammo);
+		saved_game.read<int32_t>(lastAmmoInc);
+		saved_game.read<int32_t>(nextMuzzle);
+		saved_game.read<int32_t>(enemyEntNum);
+		saved_game.read<int32_t>(enemyHoldTime);
+	}
 } vehTurretStatus_t;
 
 // This is the implementation of the vehicle interface and any of the other variables needed. This
@@ -576,7 +636,7 @@ struct Vehicle_t
 	vec3_t		m_vOrientation;
 
 	// How long you have strafed left or right (increments every frame that you strafe to right, decrements every frame you strafe left)
-	int			m_fStrafeTime;	
+	int			m_fStrafeTime;
 
 	// Previous angles of this vehicle.
 	vec3_t		m_vPrevOrientation;
@@ -591,7 +651,7 @@ struct Vehicle_t
 	int			m_iShields;	//energy shielding - STAT_ARMOR on NPC
 
 	// Timer for all cgame-FX...? ex: exhaust?
-	int			m_iLastFXTime; 
+	int			m_iLastFXTime;
 
 	// When to die.
 	int			m_iDieTime;
@@ -631,6 +691,101 @@ struct Vehicle_t
 	// don't need these in mp
 	int			m_safeJumpMountTime;
 	float		m_safeJumpMountRightDot;
+
+
+	void sg_export(
+		ojk::SavedGameHelper& saved_game) const
+	{
+		saved_game.write<int32_t>(m_pPilot);
+		saved_game.write<int32_t>(m_iPilotTime);
+		saved_game.write<int32_t>(m_bHasHadPilot);
+		saved_game.write<int32_t>(m_pDroidUnit);
+		saved_game.write<int32_t>(m_pParentEntity);
+		saved_game.write<int32_t>(m_iBoarding);
+		saved_game.write<int8_t>(m_bWasBoarding);
+		saved_game.skip(3);
+		saved_game.write<float>(m_vBoardingVelocity);
+		saved_game.write<float>(m_fTimeModifier);
+		saved_game.write<int32_t>(m_iLeftWingBone);
+		saved_game.write<int32_t>(m_iRightWingBone);
+		saved_game.write<int32_t>(m_iExhaustTag);
+		saved_game.write<int32_t>(m_iMuzzleTag);
+		saved_game.write<int32_t>(m_iDroidUnitTag);
+		saved_game.write<int32_t>(m_iGunnerViewTag);
+		saved_game.write<>(m_Muzzles);
+		saved_game.write<>(m_ucmd);
+		saved_game.write<int32_t>(m_EjectDir);
+		saved_game.write<uint32_t>(m_ulFlags);
+		saved_game.write<float>(m_vOrientation);
+		saved_game.write<int32_t>(m_fStrafeTime);
+		saved_game.write<float>(m_vPrevOrientation);
+		saved_game.write<float>(m_vAngularVelocity);
+		saved_game.write<float>(m_vFullAngleVelocity);
+		saved_game.write<int32_t>(m_iArmor);
+		saved_game.write<int32_t>(m_iShields);
+		saved_game.write<int32_t>(m_iLastFXTime);
+		saved_game.write<int32_t>(m_iDieTime);
+		saved_game.write<int32_t>(m_pVehicleInfo);
+		saved_game.write<>(m_LandTrace);
+		saved_game.write<int32_t>(m_iRemovedSurfaces);
+		saved_game.write<int32_t>(m_iTurboTime);
+		saved_game.write<int32_t>(m_iDropTime);
+		saved_game.write<int32_t>(m_iSoundDebounceTimer);
+		saved_game.write<int32_t>(lastShieldInc);
+		saved_game.write<int32_t>(linkWeaponToggleHeld);
+		saved_game.write<>(weaponStatus);
+		saved_game.write<>(turretStatus);
+		saved_game.write<int32_t>(m_pOldPilot);
+		saved_game.write<int32_t>(m_safeJumpMountTime);
+		saved_game.write<float>(m_safeJumpMountRightDot);
+	}
+
+	void sg_import(
+		ojk::SavedGameHelper& saved_game)
+	{
+		saved_game.read<int32_t>(m_pPilot);
+		saved_game.read<int32_t>(m_iPilotTime);
+		saved_game.read<int32_t>(m_bHasHadPilot);
+		saved_game.read<int32_t>(m_pDroidUnit);
+		saved_game.read<int32_t>(m_pParentEntity);
+		saved_game.read<int32_t>(m_iBoarding);
+		saved_game.read<int8_t>(m_bWasBoarding);
+		saved_game.skip(3);
+		saved_game.read<float>(m_vBoardingVelocity);
+		saved_game.read<float>(m_fTimeModifier);
+		saved_game.read<int32_t>(m_iLeftWingBone);
+		saved_game.read<int32_t>(m_iRightWingBone);
+		saved_game.read<int32_t>(m_iExhaustTag);
+		saved_game.read<int32_t>(m_iMuzzleTag);
+		saved_game.read<int32_t>(m_iDroidUnitTag);
+		saved_game.read<int32_t>(m_iGunnerViewTag);
+		saved_game.read<>(m_Muzzles);
+		saved_game.read<>(m_ucmd);
+		saved_game.read<int32_t>(m_EjectDir);
+		saved_game.read<uint32_t>(m_ulFlags);
+		saved_game.read<float>(m_vOrientation);
+		saved_game.read<int32_t>(m_fStrafeTime);
+		saved_game.read<float>(m_vPrevOrientation);
+		saved_game.read<float>(m_vAngularVelocity);
+		saved_game.read<float>(m_vFullAngleVelocity);
+		saved_game.read<int32_t>(m_iArmor);
+		saved_game.read<int32_t>(m_iShields);
+		saved_game.read<int32_t>(m_iLastFXTime);
+		saved_game.read<int32_t>(m_iDieTime);
+		saved_game.read<int32_t>(m_pVehicleInfo);
+		saved_game.read<>(m_LandTrace);
+		saved_game.read<int32_t>(m_iRemovedSurfaces);
+		saved_game.read<int32_t>(m_iTurboTime);
+		saved_game.read<int32_t>(m_iDropTime);
+		saved_game.read<int32_t>(m_iSoundDebounceTimer);
+		saved_game.read<int32_t>(lastShieldInc);
+		saved_game.read<int32_t>(linkWeaponToggleHeld);
+		saved_game.read<>(weaponStatus);
+		saved_game.read<>(turretStatus);
+		saved_game.read<int32_t>(m_pOldPilot);
+		saved_game.read<int32_t>(m_safeJumpMountTime);
+		saved_game.read<float>(m_safeJumpMountRightDot);
+	}
 };
 
 extern int BG_VehicleGetIndex( const char *vehicleName );

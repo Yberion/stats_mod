@@ -34,7 +34,7 @@ ICARUS_Instance		*iICARUS;
 bufferlist_t		ICARUS_BufferList;
 entlist_t			ICARUS_EntList;
 
-extern unsigned Com_BlockChecksum (const void *buffer, int length);
+extern uint32_t Com_BlockChecksum (const void *buffer, int length);
 extern	void	Q3_DebugPrint( int level, const char *format, ... );
 
 int			ICARUS_entFilter = -1;
@@ -161,7 +161,7 @@ void ICARUS_Shutdown( void )
 	}
 
 	//Clear out all precached scripts
-	for ( ei = ICARUS_BufferList.begin(); ei != ICARUS_BufferList.end(); ei++ )
+	for ( ei = ICARUS_BufferList.begin(); ei != ICARUS_BufferList.end(); ++ei )
 	{
 		gi.Free( (*ei).second->buffer );
 		delete (*ei).second;

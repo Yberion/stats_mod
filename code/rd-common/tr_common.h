@@ -79,7 +79,7 @@ void LoadJPGFromBuffer( byte *inputBuffer, size_t len, byte **pic, int *width, i
 ================================================================================
 */
 // Convert raw image data to JPEG format and store in buffer.
-size_t RE_SaveJPGToBuffer( byte *buffer, size_t bufSize, int quality, int image_width, int image_height, byte *image_buffer, int padding );
+size_t RE_SaveJPGToBuffer( byte *buffer, size_t bufSize, int quality, int image_width, int image_height, byte *image_buffer, int padding, bool flip_vertical );
 
 // Save raw image data as JPEG image file.
 void RE_SaveJPG( const char * filename, int quality, int image_width, int image_height, byte *image_buffer, int padding );
@@ -87,3 +87,8 @@ void RE_SaveJPG( const char * filename, int quality, int image_width, int image_
 // Save raw image data as PNG image file.
 int RE_SavePNG( const char *filename, byte *buf, size_t width, size_t height, int byteDepth );
 
+void *R_Malloc( int iSize, memtag_t eTag, qboolean bZeroit=qfalse );
+void R_Free( void *ptr );
+int R_MemSize( memtag_t eTag );
+void R_MorphMallocTag( void *pvBuffer, memtag_t eDesiredTag );
+void *R_Hunk_Alloc( int iSize, qboolean bZeroit=qtrue );

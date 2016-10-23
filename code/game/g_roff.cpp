@@ -25,6 +25,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include "Q3_Interface.h"
 #include "../cgame/cg_local.h"
 #include "g_functions.h"
+#include "qcommon/ojk_saved_game_helper.h"
+
 // The list of precached ROFFs
 roff_list_t	roffs[MAX_ROFFS];
 int			num_roffs = 0;
@@ -346,7 +348,7 @@ static qboolean G_InitRoff( char *file, unsigned char *data )
 		count = LittleLong(hdr->mCount);
 
 		roffs[num_roffs].frames	= count;
-		roffs[num_roffs].data	= (void *) G_Alloc( count * sizeof( move_rotate2_t ));		
+		roffs[num_roffs].data	= (void *) G_Alloc( count * sizeof( move_rotate2_t ));
 		move_rotate2_t *mem		= (move_rotate2_t *)roffs[num_roffs].data;
 
 		if ( mem )
@@ -414,7 +416,7 @@ static qboolean G_InitRoff( char *file, unsigned char *data )
 		}
 	}
 
-	return false;
+	return qfalse;
 }
 
 //-------------------------------------------------------
@@ -507,7 +509,7 @@ void G_Roff( gentity_t *ent )
 	{
 		return;
 	}
-	
+
 	if ( ent->next_roff_time > level.time )
 	{// either I don't think or it's just not time to have me think yet
 		return;
@@ -544,7 +546,7 @@ void G_Roff( gentity_t *ent )
 #ifdef _DEBUG
 	if ( g_developer->integer )
 	{
-		Com_Printf( S_COLOR_GREEN"ROFF dat: num: %d o:<%.2f %.2f %.2f> a:<%.2f %.2f %.2f>\n", 
+		Com_Printf( S_COLOR_GREEN"ROFF dat: num: %d o:<%.2f %.2f %.2f> a:<%.2f %.2f %.2f>\n",
 					ent->roff_ctr,
 					org[0], org[1], org[2],
 					ang[0], ang[1], ang[2] );
@@ -647,18 +649,30 @@ void G_Roff( gentity_t *ent )
 
 void G_SaveCachedRoffs()
 {
-	int i, len;
+	int i, len = 0;
+
+	ojk::SavedGameHelper saved_game(
+		::gi.saved_game);
 
 	// Write out the number of cached ROFFs
-	gi.AppendToSaveGame( INT_ID('R','O','F','F'), (void *)&num_roffs, sizeof(num_roffs) );
+	saved_game.write_chunk<int32_t>(
+		INT_ID('R', 'O', 'F', 'F'),
+		::num_roffs);
 
 	// Now dump out the cached ROFF file names in order so they can be loaded on the other end
 	for ( i = 0; i < num_roffs; i++ )
 	{
 		// Dump out the string length to make things a bit easier on the other end...heh heh.
 		len = strlen( roffs[i].fileName ) + 1;
-		gi.AppendToSaveGame( INT_ID('S','L','E','N'), (void *)&len, sizeof(len) );
-		gi.AppendToSaveGame( INT_ID('R','S','T','R'), (void *)roffs[i].fileName, len );
+
+		saved_game.write_chunk<int32_t>(
+			INT_ID('S', 'L', 'E', 'N'),
+			len);
+
+		saved_game.write_chunk(
+			INT_ID('R', 'S', 'T', 'R'),
+			roffs[i].fileName,
+			len);
 	}
 }
 
@@ -671,17 +685,29 @@ void G_SaveCachedRoffs()
 
 void G_LoadCachedRoffs()
 {
-	int		i, count, len;
+	int		i, count = 0, len = 0;
 	char	buffer[MAX_QPATH];
 
+	ojk::SavedGameHelper saved_game(
+		::gi.saved_game);
+
 	// Get the count of goodies we need to revive
-	gi.ReadFromSaveGame( INT_ID('R','O','F','F'), (void *)&count, sizeof(count), NULL );
+	saved_game.read_chunk<int32_t>(
+		INT_ID('R', 'O', 'F', 'F'),
+		count);
 
 	// Now bring 'em back to life
 	for ( i = 0; i < count; i++ )
 	{
-		gi.ReadFromSaveGame( INT_ID('S','L','E','N'), (void *)&len, sizeof(len), NULL );
-		gi.ReadFromSaveGame( INT_ID('R','S','T','R'), (void *)(buffer), len, NULL );
+		saved_game.read_chunk<int32_t>(
+			INT_ID('S', 'L', 'E', 'N'),
+			len);
+
+		saved_game.read_chunk(
+			INT_ID('R', 'S', 'T', 'R'),
+			buffer,
+			len);
+
 		G_LoadRoff( buffer );
 	}
 }
