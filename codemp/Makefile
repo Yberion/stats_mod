@@ -147,21 +147,6 @@ OPENJKDED_OBJS				= 	$(B)/$(OPENJKDED)/botlib/be_aas_bspq3.o \
 											$(B)/$(OPENJKDED)/icarus/Sequence.o \
 											$(B)/$(OPENJKDED)/icarus/Sequencer.o \
 											$(B)/$(OPENJKDED)/icarus/TaskManager.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/png.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngerror.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngget.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngmem.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngpread.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngread.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngrio.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngrtran.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngrutil.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngset.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngtrans.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngwio.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngwrite.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngwtran.o \
-											$(B)/$(OPENJKDED)/$(LIB)/libpng/pngwutil.o \
 											$(B)/$(OPENJKDED)/null/null_client.o \
 											$(B)/$(OPENJKDED)/null/null_input.o \
 											$(B)/$(OPENJKDED)/null/null_renderer.o \
@@ -256,7 +241,6 @@ makedirs:
 	@if [ ! -d $(B)/$(OPENJKDED)/botlib ];then mkdir $(B)/$(OPENJKDED)/botlib;fi
 	@if [ ! -d $(B)/$(OPENJKDED)/icarus ];then mkdir $(B)/$(OPENJKDED)/icarus;fi
 	@if [ ! -d $(B)/$(OPENJKDED)/$(LIB) ];then mkdir $(B)/$(OPENJKDED)/$(LIB);fi
-	@if [ ! -d $(B)/$(OPENJKDED)/$(LIB)/libpng ];then mkdir $(B)/$(OPENJKDED)/$(LIB)/libpng;fi
 	@if [ ! -d $(B)/$(OPENJKDED)/$(LIB)/minizip ];then mkdir $(B)/$(OPENJKDED)/$(LIB)/minizip;fi
 	@if [ ! -d $(B)/$(OPENJKDED)/null ];then mkdir $(B)/$(OPENJKDED)/null;fi
 	@if [ ! -d $(B)/$(OPENJKDED)/qcommon ];then mkdir $(B)/$(OPENJKDED)/qcommon;fi
@@ -300,9 +284,6 @@ $(B)/$(OPENJKDED)/ghoul2/%.o: ghoul2/%.cpp
 $(B)/$(OPENJKDED)/icarus/%.o: icarus/%.cpp
 	$(CXX) $(OPENJKDED_CFLAGS) $(OPENJKDED_CXXFLAGS) $(OPENJKDED_CXXDEFINES) -c $< -o $@
 
-$(B)/$(OPENJKDED)/$(LIB)/libpng/%.o: ../$(LIB)/libpng/%.c
-	$(CC) $(OPENJKDED_CFLAGS) -c $< -o $@
-	
 $(B)/$(OPENJKDED)/null/%.o: null/%.cpp
 	$(CXX) $(OPENJKDED_CFLAGS) $(OPENJKDED_CXXFLAGS) $(OPENJKDED_CXXDEFINES) -c $< -o $@
 

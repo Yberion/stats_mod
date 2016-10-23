@@ -151,10 +151,10 @@ void Cmd_ModHelp_f(gentity_t *ent) {
 	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "Displays a wide range of information about the server.\n");
 	Q_strcat(modhelp, sizeof(modhelp), "\n");
 	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_CYAN "/callvote forcespec X" S_COLOR_WHITE "\n");
-	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "Allows you to " S_COLOR_YELLOW "forceteam X spectator" S_COLOR_WHITE " a player without rcon acces.\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "Allows you to " S_COLOR_YELLOW "forceteam X spectator" S_COLOR_WHITE " a player without rcon access.\n");
 	Q_strcat(modhelp, sizeof(modhelp), "\n");
 	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "After each round there will be a wide range of information displayed in the console.\n");
-	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "You will then be able te see how much damage you dealt or team kills for exemple.\n");
+	Q_strcat(modhelp, sizeof(modhelp), "" S_COLOR_RED "-" S_COLOR_WHITE "You will then be able to see how much damage you dealt or team kills for example.\n");
 	Q_strcat(modhelp, sizeof(modhelp), "\n");
 
 	trap->SendServerCommand(ent - g_entities, va("print \"%s\"", modhelp));

@@ -77,7 +77,7 @@ XCVAR_DEF( g_autoMapCycle,				"0",			NULL,				CVAR_ARCHIVE|CVAR_NORESTART,					q
 XCVAR_DEF( g_banIPs,					"",				NULL,				CVAR_ARCHIVE,									qfalse )
 XCVAR_DEF( g_charRestrictRGB,			"1",			NULL,				CVAR_ARCHIVE,									qfalse )
 XCVAR_DEF( g_customeannouncement,		"For more information about the mod running on this server, enter the following command in the console: /modhelp",				NULL,				CVAR_NONE,										qtrue )
-XCVAR_DEF( g_customeannouncementtime,	"250000",		NULL,				CVAR_NONE,										qtrue )
+XCVAR_DEF( g_customeannouncementtime,	"480000",		NULL,				CVAR_NONE,										qtrue )
 XCVAR_DEF( g_duelWeaponDisable,			"1",			NULL,				CVAR_SERVERINFO|CVAR_ARCHIVE|CVAR_LATCH,		qtrue )
 XCVAR_DEF( g_debugAlloc,				"0",			NULL,				CVAR_NONE,										qfalse )
 XCVAR_DEF( g_debugDamage,				"0",			NULL,				CVAR_NONE,										qfalse )
