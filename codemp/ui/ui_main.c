@@ -322,13 +322,12 @@ int UI_ParseAnimationFile(const char *filename, animation_t *animset, qboolean i
 	if (!UIPAFtextLoaded || !isHumanoid)
 	{ //rww - We are always using the same animation config now. So only load it once.
 		len = trap->FS_Open( filename, &f, FS_READ );
-		if ( (len <= 0) || (len >= sizeof( UIPAFtext ) - 1) )
-		{
-			if (len > 0)
-			{
-				Com_Error(ERR_DROP, "%s exceeds the allowed ui-side animation buffer!", filename);
-			}
+		if ( !f ) {
 			return -1;
+		}
+		if ( len >= sizeof( UIPAFtext ) - 1 ) {
+			trap->FS_Close( f );
+			Com_Error(ERR_DROP, "%s exceeds the allowed ui-side animation buffer!", filename);
 		}
 
 		trap->FS_Read( UIPAFtext, len, f );
@@ -6828,7 +6827,7 @@ static void UI_RunMenuScript(char **args)
 						Menu_SetItemBackground(menu, item->window.name, string2);
 
 						// Re-enable this button
-						Menu_ItemDisable(menu,(char *) item->window.name, qfalse);
+						Menu_ItemDisable(menu, item->window.name, qfalse);
 					}
 
 					// Set the new item to the given background
@@ -6845,7 +6844,7 @@ static void UI_RunMenuScript(char **args)
 								trap->Cvar_VariableStringBuffer( cvarLitArg, string, sizeof(string) );
 								Menu_SetItemBackground(menu, item->window.name, string);
 								// Disable button
-								Menu_ItemDisable(menu,(char *) item->window.name, qtrue);
+								Menu_ItemDisable(menu, item->window.name, qtrue);
 							}
 						}
 					}
@@ -7125,8 +7124,11 @@ void UI_SetSiegeTeams(void)
 
 	len = trap->FS_Open(levelname, &f, FS_READ);
 
-	if (!f || len >= MAX_SIEGE_INFO_SIZE)
-	{
+	if (!f) {
+		return;
+	}
+	if (len >= MAX_SIEGE_INFO_SIZE) {
+		trap->FS_Close( f );
 		return;
 	}
 
@@ -9703,6 +9705,7 @@ static void UI_BuildPlayerModel_List( qboolean inGameLoad )
 			buffer = malloc(filelen + 1);
 			if(!buffer)
 			{
+				trap->FS_Close( f );
 				Com_Error(ERR_FATAL, "Could not allocate buffer to read %s", fpath);
 			}
 

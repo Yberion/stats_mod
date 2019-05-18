@@ -196,17 +196,15 @@ void CG_ToggleLAGoggles( void )
 	}
 }
 
-void CG_LoadHud_f( void )
-{
-	const char *hudSet;
-
-	hudSet = cg_hudFiles.string;
-	if (hudSet[0] == '\0')
-	{
+void CG_LoadHud_f( void ) {
+	const char *hudSet = cg_hudFiles.string;
+	if ( hudSet[0] == '\0' ) {
 		hudSet = "ui/jahud.txt";
 	}
 
-	CG_LoadMenus(hudSet);
+	//cgi_UI_String_Init();
+	//cgi_UI_Menu_Reset();
+	CG_LoadMenus( hudSet );
 }
 
 typedef struct {
@@ -269,7 +267,7 @@ Cmd_Argc() / Cmd_Argv()
 qboolean CG_ConsoleCommand( void ) {
 	consoleCommand_t	*command = NULL;
 
-	command = (consoleCommand_t *)bsearch( CG_Argv( 0 ), commands, numCommands, sizeof( commands[0] ), cmdcmp );
+	command = (consoleCommand_t *)Q_LinearSearch( CG_Argv( 0 ), commands, numCommands, sizeof( commands[0] ), cmdcmp );
 
 	if ( !command )
 		return qfalse;
@@ -281,6 +279,7 @@ qboolean CG_ConsoleCommand( void ) {
 static const char *gcmds[] = {
 	"bow",
 	"entitylist",
+	"difficulty",
 	"flourish",
 	"force_absorb",
 	"force_distract",
@@ -310,6 +309,7 @@ static const char *gcmds[] = {
 	"saberAttackCycle",
 	"saberColor",
 	"saberblade",
+	"secrets",
 	"setForceAll",
 	"setSaberAll",
 	"setobjective",

@@ -1009,7 +1009,7 @@ void Info_SetValueForKey( char *s, const char *key, const char *value ) {
 
 	if (strlen(newi) + strlen(s) >= MAX_INFO_STRING)
 	{
-		Com_Printf ("Info string length exceeded\n");
+		Com_Printf ("Info string length exceeded: %s\n", s);
 		return;
 	}
 
@@ -1128,8 +1128,6 @@ void Q_RemoveFromBitflags( uint32_t *bits, int index, uint32_t bitsPerByte ) {
 	bits[index / bitsPerByte] &= ~(1 << (index % bitsPerByte));
 }
 
-
-
 void *Q_LinearSearch( const void *key, const void *ptr, size_t count,
 	size_t size, cmpFunc_t cmp )
 {
@@ -1141,9 +1139,6 @@ void *Q_LinearSearch( const void *key, const void *ptr, size_t count,
 	}
 	return NULL;
 }
-
-/*
-==================
 calcRatio
 ==================
 */
@@ -1191,3 +1186,4 @@ float calcDmgRatio(int damageDealt, int damageTaken, int damageTeam, char *dmgRa
 	else
 		return (float)damageDealt / ((float)damageTaken + (float)damageTeam);
 }
+=======
