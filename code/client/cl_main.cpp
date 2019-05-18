@@ -1262,32 +1262,19 @@ void CL_Init( void ) {
 
 	cl_showMouseRate = Cvar_Get ("cl_showmouserate", "0", 0);
 
-<<<<<<< HEAD
-	cl_allowAltEnter = Cvar_Get ("cl_allowAltEnter", "1", CVAR_ARCHIVE);
-	cl_inGameVideo = Cvar_Get ("cl_inGameVideo", "1", CVAR_ARCHIVE);
-=======
 	cl_allowAltEnter = Cvar_Get ("cl_allowAltEnter", "1", CVAR_ARCHIVE_ND);
 	cl_inGameVideo = Cvar_Get ("cl_inGameVideo", "1", CVAR_ARCHIVE_ND);
->>>>>>> 94866c43789ec8d352d4a4ddecf26297fdd0520f
 	cl_framerate	= Cvar_Get ("cl_framerate", "0", CVAR_TEMP);
 
 	// init autoswitch so the ui will have it correctly even
 	// if the cgame hasn't been started
 	Cvar_Get ("cg_autoswitch", "1", CVAR_ARCHIVE);
 
-<<<<<<< HEAD
-	m_pitch = Cvar_Get ("m_pitch", "0.022", CVAR_ARCHIVE);
-	m_yaw = Cvar_Get ("m_yaw", "0.022", CVAR_ARCHIVE);
-	m_forward = Cvar_Get ("m_forward", "0.25", CVAR_ARCHIVE);
-	m_side = Cvar_Get ("m_side", "0.25", CVAR_ARCHIVE);
-	m_filter = Cvar_Get ("m_filter", "0", CVAR_ARCHIVE);
-=======
 	m_pitch = Cvar_Get ("m_pitch", "0.022", CVAR_ARCHIVE_ND);
 	m_yaw = Cvar_Get ("m_yaw", "0.022", CVAR_ARCHIVE_ND);
 	m_forward = Cvar_Get ("m_forward", "0.25", CVAR_ARCHIVE_ND);
 	m_side = Cvar_Get ("m_side", "0.25", CVAR_ARCHIVE_ND);
 	m_filter = Cvar_Get ("m_filter", "0", CVAR_ARCHIVE_ND);
->>>>>>> 94866c43789ec8d352d4a4ddecf26297fdd0520f
 
 	// ~ and `, as keys and characters
 	cl_consoleKeys = Cvar_Get( "cl_consoleKeys", "~ ` 0x7e 0x60 0xb2", CVAR_ARCHIVE);

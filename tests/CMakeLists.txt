@@ -1,9 +1,5 @@
 #============================================================================
-<<<<<<< HEAD
-# Copyright (C) 2013 - 2015, OpenJK contributors
-=======
 # Copyright (C) 2013 - 2018, OpenJK contributors
->>>>>>> 94866c43789ec8d352d4a4ddecf26297fdd0520f
 #
 # This file is part of the OpenJK source code.
 #
